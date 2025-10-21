@@ -82,8 +82,9 @@ void autonomous() {}
 void opcontrol()
 {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::MotorGroup left_mg({2, -3, -4});	// Creates a motor group
-	pros::MotorGroup right_mg({8, 9, -10}); // Creates a motor group
+	pros::MotorGroup left_mg({2, -3, -4});	// motor group for left side of drivetrain
+	pros::MotorGroup right_mg({8, 9, -10}); // motor group for right side of drivetrain
+	pros::MotorGroup right_mg({-6, 7});			// motor group for the intake & conveyor
 
 	while (true)
 	{
