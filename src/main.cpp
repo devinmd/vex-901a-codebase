@@ -92,23 +92,23 @@ void opcontrol()
 										 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 										 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0); // Prints status of the emulated screen LCDs
 
-		// Arcade control scheme
-		int dir = master.get_analog(ANALOG_LEFT_Y);		// Gets amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_RIGHT_X); // Gets the turn left/right from right joystick
-		left_mg.move(dir + turn);											// Sets left motor voltage
-		right_mg.move(dir - turn);										// Sets right motor voltage
+		// arcade control
+		int dir = master.get_analog(ANALOG_LEFT_Y);		// get amount forward/backward from left joystick
+		int turn = master.get_analog(ANALOG_RIGHT_X); // get the turn left/right from right joystick
+		left_mg.move(dir + turn);											// set left motor voltage
+		right_mg.move(dir - turn);										// set right motor voltage
 
 		// trigger motors on button A press
-		if (master.get_digital(DIGITAL_A))
+		if (master.get_digital(E_CONTROLLER_DIGITAL_A))
 		{
 			// on press A
-			intake_mg.move(127); // full forward power
+			intake_mg.move(127); // full power
 		}
 		else
 		{
-			intake_mg.move(0); // stop when not pressed
+			intake_mg.move(0); // no power
 		}
 
-		pros::delay(10); // Run for 20 ms then update
+		pros::delay(20); // 20ms delay
 	}
 }
