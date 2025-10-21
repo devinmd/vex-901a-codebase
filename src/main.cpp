@@ -84,7 +84,7 @@ void opcontrol()
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
 	pros::MotorGroup left_mg({2, -3, -4});	// motor group for left side of drivetrain
 	pros::MotorGroup right_mg({8, 9, -10}); // motor group for right side of drivetrain
-	pros::MotorGroup right_mg({-6, 7});			// motor group for the intake & conveyor
+	pros::MotorGroup intake_mg({-6, 7});		// motor group for the intake & conveyor
 
 	while (true)
 	{
@@ -97,6 +97,18 @@ void opcontrol()
 		int turn = master.get_analog(ANALOG_RIGHT_X); // Gets the turn left/right from right joystick
 		left_mg.move(dir + turn);											// Sets left motor voltage
 		right_mg.move(dir - turn);										// Sets right motor voltage
-		pros::delay(10);															// Run for 20 ms then update
+
+		// trigger motors on button A press
+		if (master.get_digital(DIGITAL_A))
+		{
+			// on press A
+			intake_mg.move(127); // full forward power
+		}
+		else
+		{
+			intake_mg.move(0); // stop when not pressed
+		}
+
+		pros::delay(10); // Run for 20 ms then update
 	}
 }
