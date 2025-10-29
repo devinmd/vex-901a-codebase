@@ -1,4 +1,79 @@
 #include "main.h"
+#include "lemlib/api.hpp" // IWYU pragma: keep
+#include "lemlib/chassis/trackingWheel.hpp"
+
+// controller
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
+// drivetrain motors
+pros::MotorGroup left_mg({2, -3, -4}, pros::MotorGearset::blue);
+pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
+// intake motors
+pros::MotorGroup intake_mg({6, 7});
+
+// drivetrain settings
+lemlib::Drivetrain drivetrain(&left_mg,                   // left motor group
+                              &right_mg,                  // right motor group
+                              10,                         // 10 inch track width
+                              lemlib::Omniwheel::NEW_325, // wheel type
+                              450, // drivetrain rpm is 360
+                              2    // horizontal drift is 2 (for now)
+);
+
+// imu
+pros::Imu imu(10);
+// horizontal tracking wheel encoder
+pros::Rotation horizontal_encoder(20);
+// vertical tracking wheel encoder
+pros::adi::Encoder vertical_encoder('C', 'D', true);
+// horizontal tracking wheel
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder,
+                                                lemlib::Omniwheel::NEW_275,
+                                                -5.75);
+// vertical tracking wheel
+lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder,
+                                              lemlib::Omniwheel::NEW_275, -2.5);
+
+// odometry settings
+lemlib::OdomSensors sensors(
+    &vertical_tracking_wheel, // vertical tracking wheel 1, set to null
+    nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
+    &horizontal_tracking_wheel, // horizontal tracking wheel 1
+    nullptr,                    // horizontal tracking wheel 2, set to nullptr
+    &imu                        // inertial sensor
+);
+
+// lateral PID controller
+lemlib::ControllerSettings
+    lateral_controller(10,  // proportional gain (kP)
+                       0,   // integral gain (kI)
+                       3,   // derivative gain (kD)
+                       3,   // anti windup
+                       1,   // small error range, in inches
+                       100, // small error range timeout, in milliseconds
+                       3,   // large error range, in inches
+                       500, // large error range timeout, in milliseconds
+                       20   // maximum acceleration (slew)
+    );
+
+// angular PID controller
+lemlib::ControllerSettings
+    angular_controller(2,   // proportional gain (kP)
+                       0,   // integral gain (kI)
+                       10,  // derivative gain (kD)
+                       3,   // anti windup
+                       1,   // small error range, in degrees
+                       100, // small error range timeout, in milliseconds
+                       3,   // large error range, in degrees
+                       500, // large error range timeout, in milliseconds
+                       0    // maximum acceleration (slew)
+    );
+
+// create the chassis
+lemlib::Chassis chassis(drivetrain,         // drivetrain settings
+                        lateral_controller, // lateral PID settings
+                        angular_controller, // angular PID settings
+                        sensors             // odometry sensors
+);
 
 /**
  * A callback function for LLEMU's center button.
@@ -6,18 +81,14 @@
  * When this callback is fired, it will toggle line 2 of the LCD text between
  * "I was pressed!" and nothing.
  */
-void on_center_button()
-{
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed)
-	{
-		pros::lcd::set_text(2, "I was pressed!");
-	}
-	else
-	{
-		pros::lcd::clear_line(2);
-	}
+void on_center_button() {
+  static bool pressed = false;
+  pressed = !pressed;
+  if (pressed) {
+    pros::lcd::set_text(2, "I was pressed!");
+  } else {
+    pros::lcd::clear_line(2);
+  }
 }
 
 /**
@@ -26,12 +97,22 @@ void on_center_button()
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize()
-{
-	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+void initialize() {
+  pros::lcd::initialize(); // initialize brain screen
+  chassis.calibrate();     // calibrate sensors
+  // print position to brain screen
+  /*pros::Task screen_task([&]() {
+    while (true) {
+      // print robot location to the brain screen
+      pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
+      pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
+      pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+      // delay to save resources
+      pros::delay(20);
+    }
+  });*/
 
-	pros::lcd::register_btn1_cb(on_center_button);
+  pros::lcd::register_btn1_cb(on_center_button);
 }
 
 /**
@@ -79,36 +160,62 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 
-void opcontrol()
-{
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::MotorGroup left_mg({2, -3, -4});	// motor group for left side of drivetrain
-	pros::MotorGroup right_mg({8, 9, -10}); // motor group for right side of drivetrain
-	pros::MotorGroup intake_mg({-6, 7});		// motor group for the intake & conveyor
+void opcontrol() {
 
-	while (true)
-	{
-		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-										 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-										 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0); // Prints status of the emulated screen LCDs
+  int direction = -1;
+  bool lastX = false;
+  bool xPressed = false;
 
-		// arcade control
-		int dir = master.get_analog(ANALOG_LEFT_Y);		// get amount forward/backward from left joystick
-		int turn = master.get_analog(ANALOG_RIGHT_X); // get the turn left/right from right joystick
-		left_mg.move(dir + turn);											// set left motor voltage
-		right_mg.move(dir - turn);										// set right motor voltage
+  while (true) {
+    pros::lcd::print(0, "%d %d %d",
+                     (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
+                     (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
+                     (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >>
+                         0); // Prints status of the emulated screen LCDs
 
-		// trigger motors on button A press
-		if (master.get_digital(E_CONTROLLER_DIGITAL_A))
-		{
-			// on press A
-			intake_mg.move(127); // full power
-		}
-		else
-		{
-			intake_mg.move(0); // no power
-		}
+    // arcade drive
+    // get left y and right x positions
+    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
 
-		pros::delay(20); // 20ms delay
-	}
+    // move the robot
+    // prioritize steering slightly
+    chassis.arcade(leftY, leftX, false, 0.75);
+
+    // curvature drive
+    // get left y and right x positions
+    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    // int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+
+    // move the robot
+    // chassis.curvature(leftY, rightX);
+
+    // arcade control
+    // int dir = direction *
+    //           controller.get_analog(ANALOG_LEFT_Y);   // invert
+    //           forward/backward
+    // int turn = controller.get_analog(ANALOG_RIGHT_X); // keep turning the
+    // same
+
+    // left_mg.move(dir + turn);
+    // right_mg.move(dir - turn);
+
+    // intake motors
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+      intake_mg.move(-127);
+    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+      intake_mg.move(127);
+    } else {
+      intake_mg.move(0);
+    }
+
+    // invert throttle button
+    xPressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
+    if (xPressed && !lastX) {
+      direction = -direction;
+    }
+    lastX = xPressed;
+
+    pros::delay(25);
+  }
 }
