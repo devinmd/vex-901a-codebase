@@ -1,14 +1,23 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/trackingWheel.hpp"
+#include "pros/adi.hpp"
+#include "pros/misc.h"
+#include "pros/motors.hpp"
+#include "pros/rotation.hpp"
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
+
+// piston
+pros::adi::DigitalOut piston('A');
+
 // drivetrain motors
 pros::MotorGroup left_mg({2, -3, -4}, pros::MotorGearset::blue);
 pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
 // intake motors
-pros::MotorGroup intake_mg({6, 7});
+pros::Motor bottomIntake(6);
+pros::Motor topIntake(7);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_mg,                   // left motor group
@@ -20,11 +29,11 @@ lemlib::Drivetrain drivetrain(&left_mg,                   // left motor group
 );
 
 // imu
-pros::Imu imu(10);
+// pros::Imu imu(10);
 // horizontal tracking wheel encoder
-pros::Rotation horizontal_encoder(20);
+pros::Rotation horizontal_encoder(19);
 // vertical tracking wheel encoder
-pros::adi::Encoder vertical_encoder('C', 'D', true);
+pros::Rotation vertical_encoder(20);
 // horizontal tracking wheel
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder,
                                                 lemlib::Omniwheel::NEW_275,
@@ -39,7 +48,7 @@ lemlib::OdomSensors sensors(
     nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
     &horizontal_tracking_wheel, // horizontal tracking wheel 1
     nullptr,                    // horizontal tracking wheel 2, set to nullptr
-    &imu                        // inertial sensor
+    nullptr                        // inertial sensor
 );
 
 // lateral PID controller
@@ -144,7 +153,16 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+
+ ASSET(path_txt); // '.' replaced with "_" to make c++ happy
+
+
+void autonomous() {
+
+  chassis.setPose(0, 0, 0);
+  // chassis.moveToPoint(10, 10, 5000);
+  // chassis.follow(path_txt, 10, 5000, true);
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -165,6 +183,7 @@ void opcontrol() {
   int direction = -1;
   bool lastX = false;
   bool xPressed = false;
+  bool piston_state = false;
 
   while (true) {
     pros::lcd::print(0, "%d %d %d",
@@ -175,20 +194,20 @@ void opcontrol() {
 
     // arcade drive
     // get left y and right x positions
-    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
+    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    // int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
 
     // move the robot
     // prioritize steering slightly
-    chassis.arcade(leftY, leftX, false, 0.75);
+    // chassis.arcade(leftY * direction, leftX, false, 0.75);
 
     // curvature drive
     // get left y and right x positions
-    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    // int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
     // move the robot
-    // chassis.curvature(leftY, rightX);
+    chassis.curvature(leftY * direction, rightX);
 
     // arcade control
     // int dir = direction *
@@ -202,12 +221,33 @@ void opcontrol() {
 
     // intake motors
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
-      intake_mg.move(-127);
+      // forward
+      topIntake.move(-127);
+      bottomIntake.move(-127);
     } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-      intake_mg.move(127);
+      // backward
+      topIntake.move(127);
+      bottomIntake.move(127);
+    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+      // top backward
+      topIntake.move(127);
+      bottomIntake.move(-127);
     } else {
-      intake_mg.move(0);
+      topIntake.move(0);
+      bottomIntake.move(0);
     }
+
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
+      piston_state = !piston_state;   // toggle state
+      piston.set_value(piston_state); // activate or deactivate piston
+    }
+
+    
+      if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+        // autonomous();
+    }
+
+
 
     // invert throttle button
     xPressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
