@@ -6,41 +6,26 @@
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
 
-// controller
+//
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-
-// piston
 pros::adi::DigitalOut piston('A');
-
-// drivetrain motors
 pros::MotorGroup left_mg({2, -3, -4}, pros::MotorGearset::blue);
 pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
-// intake motors
 pros::Motor bottomIntake(6);
 pros::Motor topIntake(7);
+// pros::Imu imu(10);
+pros::Rotation horizontal_rotation_sensor(19);
+pros::Rotation vertical_rotation_sensor(20);
 
 // drivetrain settings
-lemlib::Drivetrain drivetrain(&left_mg,                   // left motor group
-                              &right_mg,                  // right motor group
-                              10,                         // 10 inch track width
-                              lemlib::Omniwheel::NEW_325, // wheel type
-                              450, // drivetrain rpm is 360
-                              2    // horizontal drift is 2 (for now)
-);
+lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 10,
+                              lemlib::Omniwheel::NEW_325, 450, 2);
 
-// imu
-// pros::Imu imu(10);
-// horizontal tracking wheel encoder
-pros::Rotation horizontal_encoder(19);
-// vertical tracking wheel encoder
-pros::Rotation vertical_encoder(20);
-// horizontal tracking wheel
-lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_encoder,
-                                                lemlib::Omniwheel::NEW_275,
-                                                -5.75);
-// vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder,
-                                              lemlib::Omniwheel::NEW_275, -2.5);
+lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_rotation_sensor,
+                                                lemlib::Omniwheel::NEW_2, 0);
+
+lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor,
+                                              lemlib::Omniwheel::NEW_2, 0);
 
 // odometry settings
 lemlib::OdomSensors sensors(
@@ -48,7 +33,7 @@ lemlib::OdomSensors sensors(
     nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
     &horizontal_tracking_wheel, // horizontal tracking wheel 1
     nullptr,                    // horizontal tracking wheel 2, set to nullptr
-    nullptr                        // inertial sensor
+    nullptr                     // inertial sensor
 );
 
 // lateral PID controller
@@ -109,8 +94,16 @@ void on_center_button() {
 void initialize() {
   pros::lcd::initialize(); // initialize brain screen
   chassis.calibrate();     // calibrate sensors
-  // print position to brain screen
-  /*pros::Task screen_task([&]() {
+  pros::delay(500);        // give odom time to start
+
+  /*pros::Task screen_task([]() {
+    while (true) {
+      pros::lcd::print(0, "X: %d", vertical_rotation_sensor.get_angle());
+      pros::lcd::print(1, "Y: %d", horizontal_rotation_sensor.get_angle());
+      pros::delay(100);
+    }
+  });*/
+  pros::Task screen_task([&]() {
     while (true) {
       // print robot location to the brain screen
       pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
@@ -119,7 +112,7 @@ void initialize() {
       // delay to save resources
       pros::delay(20);
     }
-  });*/
+  });
 
   pros::lcd::register_btn1_cb(on_center_button);
 }
@@ -154,14 +147,13 @@ void competition_initialize() {}
  * from where it left off.
  */
 
- ASSET(path_txt); // '.' replaced with "_" to make c++ happy
-
+ASSET(autonright_txt);
 
 void autonomous() {
 
   chassis.setPose(0, 0, 0);
   // chassis.moveToPoint(10, 10, 5000);
-  // chassis.follow(path_txt, 10, 5000, true);
+  chassis.follow(autonright_txt, 10, 5000, true);
 }
 
 /**
@@ -186,11 +178,6 @@ void opcontrol() {
   bool piston_state = false;
 
   while (true) {
-    pros::lcd::print(0, "%d %d %d",
-                     (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
-                     (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
-                     (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >>
-                         0); // Prints status of the emulated screen LCDs
 
     // arcade drive
     // get left y and right x positions
@@ -242,12 +229,9 @@ void opcontrol() {
       piston.set_value(piston_state); // activate or deactivate piston
     }
 
-    
-      if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
-        // autonomous();
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+      // autonomous();
     }
-
-
 
     // invert throttle button
     xPressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
