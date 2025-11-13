@@ -27,16 +27,16 @@ lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
 // tracking wheels
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_rotation_sensor,
                                                 lemlib::Omniwheel::NEW_2,
-                                                2); // TODO: set offset distance
+                                                0); // TODO: set offset distance
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor,
                                               lemlib::Omniwheel::NEW_2,
-                                              2); // TODO: set offset distance
+                                              0); // TODO: set offset distance
 
 // lateral PID controller
 lemlib::ControllerSettings
-    lateral_controller(10,  // proportional gain (kP)
-                       0,   // integral gain (kI)
-                       3,   // derivative gain (kD)
+    lateral_controller(13,  //
+                       0,   //
+                       3,   //
                        3,   // anti windup
                        1,   // small error range, in inches
                        100, // small error range timeout, in milliseconds
@@ -47,15 +47,15 @@ lemlib::ControllerSettings
 
 // angular PID controller
 lemlib::ControllerSettings
-    angular_controller(2,   // proportional gain (kP)
-                       0,   // integral gain (kI)
-                       10,  // derivative gain (kD)
-                       3,   // anti windup
-                       1,   // small error range, in degrees
-                       100, // small error range timeout, in milliseconds
-                       3,   // large error range, in degrees
-                       500, // large error range timeout, in milliseconds
-                       0    // maximum acceleration (slew)
+    angular_controller(2,  // 2
+                       0,  // skipped
+                       12, // 11 or 12
+                       0,  // skipped
+                       0,  // small error range, in inches
+                       0,  // small error range timeout, in milliseconds
+                       0,  // large error range, in inches
+                       0,  // large error range timeout, in milliseconds
+                       0   // maximum acceleration (slew)
     );
 
 // odometry settings
@@ -180,25 +180,29 @@ void autonomousRight() {
 void autonomous() {
 
   chassis.setPose(-48.36, 16.2, 77.89); // start position
-  chassis.turnToPoint(-17.647, 23.811, 100, {.maxSpeed = 127},
+  chassis.turnToPoint(-20.35, 22.7, 100, {.maxSpeed = 127},
                       false); // middle balls
   fullIntake.move(127);       // run intake
   chassis.moveToPoint(-17.647, 23.811, 1000, {.maxSpeed = 60}, false);
-  pros::delay(1000);
+  // pros::delay(1000);
   fullIntake.move(0); // end intake
 
   // move to match loader alignment spot
-  chassis.turnToPoint(-47, 47, 2000, {.maxSpeed = 60});
-  chassis.moveToPoint(-47, 47, 2000, {.maxSpeed = 60});
+  chassis.turnToPoint(-42, 47, 500, {.maxSpeed = 127},
+                      false); // turn to midpoint
+  chassis.moveToPoint(-42, 47, 2000, {.maxSpeed = 60}, false); // go to midpoint
 
-  chassis.turnToPoint(-60, 47, 2000, {.maxSpeed = 60}); // match loader
-  piston.set_value(false);
+  chassis.turnToPoint(-60, 47, 500, {.maxSpeed = 60},
+                      false); // face match loader
 
-  /*
-  chassis.moveToPoint(-60, 47, 2000, {.maxSpeed = 60});
-  fullIntake.move(127); // run intake
+  chassis.moveToPoint(-15, 47, 2000, {.forwards = false, .maxSpeed = 60},
+                      false); // back up into goal to align
+
   pros::delay(1000);
-  fullIntake.move(0); // run intake
+
+  // piston.set_value(false);
+  // fullIntake.move(127); // run intake
+  // fullIntake.move(0); // run intake
 
   /*
 
