@@ -180,29 +180,29 @@ void autonomousRight() {
 void autonomous() {
 
   chassis.setPose(-48.36, 16.2, 77.89); // start position
-  chassis.turnToPoint(-20.35, 22.7, 100, {.maxSpeed = 127},
+  chassis.turnToPoint(-23.85, 21.6, 100, {.maxSpeed = 120},
                       false); // middle balls
   fullIntake.move(127);       // run intake
-  chassis.moveToPoint(-17.647, 23.811, 1000, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-17.647, 23.811, 2000, {.maxSpeed = 60}, false);
   // pros::delay(1000);
   fullIntake.move(0); // end intake
 
   // move to match loader alignment spot
-  chassis.turnToPoint(-42, 47, 500, {.maxSpeed = 127},
+  chassis.turnToPoint(-42, 51, 500, {.maxSpeed = 60},
                       false); // turn to midpoint
-  chassis.moveToPoint(-42, 47, 2000, {.maxSpeed = 60}, false); // go to midpoint
+  chassis.moveToPoint(-42, 51, 2000, {.maxSpeed = 60}, false); // go to midpoint
 
-  chassis.turnToPoint(-60, 47, 500, {.maxSpeed = 60},
+  chassis.turnToPoint(-60, 51, 500, {.maxSpeed = 60},
                       false); // face match loader
 
-  chassis.moveToPoint(-15, 47, 2000, {.forwards = false, .maxSpeed = 60},
-                      false); // back up into goal to align
+  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60},
+                      true); // back up into goal to align
 
-  pros::delay(1000);
+  fullIntake.move(127); // run intake
+  pros::delay(10000);
+  fullIntake.move(0); // run intake
 
   // piston.set_value(false);
-  // fullIntake.move(127); // run intake
-  // fullIntake.move(0); // run intake
 
   /*
 
