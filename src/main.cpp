@@ -3,38 +3,34 @@
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/adi.hpp"
 #include "pros/misc.h"
+#include "pros/motor_group.hpp"
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
+#include "pros/rtos.hpp"
 
 //
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 pros::adi::DigitalOut piston('A');
-pros::MotorGroup left_mg({2, -3, -4}, pros::MotorGearset::blue);
+pros::MotorGroup left_mg({-2, 3, -4}, pros::MotorGearset::blue);
 pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
-pros::Motor bottomIntake(6);
-pros::Motor topIntake(7);
-// pros::Imu imu(10);
-pros::Rotation horizontal_rotation_sensor(19);
-pros::Rotation vertical_rotation_sensor(20);
+pros::Motor bottomIntake(-6);
+pros::Motor topIntake(-7);
+pros::MotorGroup fullIntake({-6, -7});
+pros::Imu imu(18);
+pros::Rotation horizontal_rotation_sensor(19); // TODO: might be reversed?
+pros::Rotation vertical_rotation_sensor(20);   // TODO: might be reversed?
 
 // drivetrain settings
-lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 10,
+lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
                               lemlib::Omniwheel::NEW_325, 450, 2);
 
+// tracking wheels
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_rotation_sensor,
-                                                lemlib::Omniwheel::NEW_2, 0);
-
+                                                lemlib::Omniwheel::NEW_2,
+                                                2); // TODO: set offset distance
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor,
-                                              lemlib::Omniwheel::NEW_2, 0);
-
-// odometry settings
-lemlib::OdomSensors sensors(
-    &vertical_tracking_wheel, // vertical tracking wheel 1, set to null
-    nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
-    &horizontal_tracking_wheel, // horizontal tracking wheel 1
-    nullptr,                    // horizontal tracking wheel 2, set to nullptr
-    nullptr                     // inertial sensor
-);
+                                              lemlib::Omniwheel::NEW_2,
+                                              2); // TODO: set offset distance
 
 // lateral PID controller
 lemlib::ControllerSettings
@@ -61,6 +57,15 @@ lemlib::ControllerSettings
                        500, // large error range timeout, in milliseconds
                        0    // maximum acceleration (slew)
     );
+
+// odometry settings
+lemlib::OdomSensors sensors(
+    &vertical_tracking_wheel, // vertical tracking wheel 1, set to null
+    nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
+    &horizontal_tracking_wheel, // horizontal tracking wheel 1
+    nullptr,                    // horizontal tracking wheel 2, set to nullptr
+    &imu                        // inertial sensor
+);
 
 // create the chassis
 lemlib::Chassis chassis(drivetrain,         // drivetrain settings
@@ -92,25 +97,23 @@ void on_center_button() {
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-  pros::lcd::initialize(); // initialize brain screen
-  chassis.calibrate();     // calibrate sensors
-  pros::delay(500);        // give odom time to start
+  pros::lcd::initialize();
+  chassis.calibrate();
 
-  /*pros::Task screen_task([]() {
-    while (true) {
-      pros::lcd::print(0, "X: %d", vertical_rotation_sensor.get_angle());
-      pros::lcd::print(1, "Y: %d", horizontal_rotation_sensor.get_angle());
-      pros::delay(100);
-    }
-  });*/
-  pros::Task screen_task([&]() {
+  // chassis.setPose(-48.36, 16.2, 77.89); // start position
+  // chassis.setPose(0, 0, 0); // start position
+
+  // thread to for brain screen and position logging
+  pros::Task screenTask([&]() {
     while (true) {
       // print robot location to the brain screen
       pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
       pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
       pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+      // log position telemetry
+      lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
       // delay to save resources
-      pros::delay(20);
+      pros::delay(50);
     }
   });
 
@@ -147,13 +150,65 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-ASSET(autonright_txt);
+/*
+void autonomousRight() {
+
+ // chassis.setPose(0, 0, 0); // start
+
+ chassis.turnToPoint(-25, -21.75, 1000); // middle balls
+ fullIntake.move(127);                   // run intake
+ chassis.moveToPoint(-25, -21.75, 2000);
+ fullIntake.move(0); // run intake
+
+ chassis.turnToPoint(-47, -47, 1000); // align for match loader
+ chassis.moveToPoint(-47, -47, 1000);
+
+ chassis.turnToPoint(-62, -47, 1000); // match loader
+ piston.set_value(true);              // drop tongue
+ chassis.moveToPoint(-62, -47, 1000);
+ fullIntake.move(127); // run intake
+ pros::delay(1000);
+ fullIntake.move(0); // run intake
+
+ chassis.turnToPoint(-25, -47, 1000); // long goal
+ chassis.moveToPoint(-25, -47, 5000);
+ fullIntake.move(127); // run intake
+ pros::delay(2000);
+ fullIntake.move(0); // run intake
+}*/
 
 void autonomous() {
 
-  chassis.setPose(0, 0, 0);
-  // chassis.moveToPoint(10, 10, 5000);
-  chassis.follow(autonright_txt, 10, 5000, true);
+  chassis.setPose(-48.36, 16.2, 77.89); // start position
+  chassis.turnToPoint(-17.647, 23.811, 100, {.maxSpeed = 127},
+                      false); // middle balls
+  fullIntake.move(127);       // run intake
+  chassis.moveToPoint(-17.647, 23.811, 1000, {.maxSpeed = 60}, false);
+  pros::delay(1000);
+  fullIntake.move(0); // end intake
+
+  // move to match loader alignment spot
+  chassis.turnToPoint(-47, 47, 2000, {.maxSpeed = 60});
+  chassis.moveToPoint(-47, 47, 2000, {.maxSpeed = 60});
+
+  chassis.turnToPoint(-60, 47, 2000, {.maxSpeed = 60}); // match loader
+  piston.set_value(false);
+
+  /*
+  chassis.moveToPoint(-60, 47, 2000, {.maxSpeed = 60});
+  fullIntake.move(127); // run intake
+  pros::delay(1000);
+  fullIntake.move(0); // run intake
+
+  /*
+
+  chassis.turnToPoint(-26, 47, 2000,{.maxSpeed = 60}); // long goal
+  chassis.moveToPoint(-26, 47, 5000,{.maxSpeed = 60});
+  fullIntake.move(127); // run intake
+  pros::delay(2000);
+  fullIntake.move(0); // run intake
+
+  */
 }
 
 /**
@@ -179,58 +234,35 @@ void opcontrol() {
 
   while (true) {
 
-    // arcade drive
-    // get left y and right x positions
-    // int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    // int leftX = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_X);
-
-    // move the robot
-    // prioritize steering slightly
-    // chassis.arcade(leftY * direction, leftX, false, 0.75);
-
     // curvature drive
-    // get left y and right x positions
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-    // move the robot
     chassis.curvature(leftY * direction, rightX);
 
-    // arcade control
-    // int dir = direction *
-    //           controller.get_analog(ANALOG_LEFT_Y);   // invert
-    //           forward/backward
-    // int turn = controller.get_analog(ANALOG_RIGHT_X); // keep turning the
-    // same
-
-    // left_mg.move(dir + turn);
-    // right_mg.move(dir - turn);
-
     // intake motors
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) {
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
       // forward
-      topIntake.move(-127);
-      bottomIntake.move(-127);
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-      // backward
       topIntake.move(127);
       bottomIntake.move(127);
     } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-      // top backward
-      topIntake.move(127);
+      // backward
+      topIntake.move(-127);
       bottomIntake.move(-127);
     } else {
       topIntake.move(0);
       bottomIntake.move(0);
     }
 
+    // piston
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-      piston_state = !piston_state;   // toggle state
-      piston.set_value(piston_state); // activate or deactivate piston
+      piston_state = !piston_state;
+      piston.set_value(piston_state);
     }
 
+    // trigger auton for testing
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
-      // autonomous();
+      // auton left
+      autonomous();
     }
 
     // invert throttle button
