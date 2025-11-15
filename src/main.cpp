@@ -150,34 +150,21 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-/*
-void autonomousRight() {
-
- // chassis.setPose(0, 0, 0); // start
-
- chassis.turnToPoint(-25, -21.75, 1000); // middle balls
- fullIntake.move(127);                   // run intake
- chassis.moveToPoint(-25, -21.75, 2000);
- fullIntake.move(0); // run intake
-
- chassis.turnToPoint(-47, -47, 1000); // align for match loader
- chassis.moveToPoint(-47, -47, 1000);
-
- chassis.turnToPoint(-62, -47, 1000); // match loader
- piston.set_value(true);              // drop tongue
- chassis.moveToPoint(-62, -47, 1000);
- fullIntake.move(127); // run intake
- pros::delay(1000);
- fullIntake.move(0); // run intake
-
- chassis.turnToPoint(-25, -47, 1000); // long goal
- chassis.moveToPoint(-25, -47, 5000);
- fullIntake.move(127); // run intake
- pros::delay(2000);
- fullIntake.move(0); // run intake
-}*/
 
 void autonomous() {
+
+  // DOES NOT WORK THE THETA IS WRONG
+  chassis.setPose(-48.36, -16.2, 77.89); // start position
+  chassis.turnToPoint(-23.85, -21.6, 100, {.maxSpeed = 120},
+                      false); // middle balls
+  fullIntake.move(127);       // run intake
+  chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
+  // pros::delay(1000);
+  fullIntake.move(0); // end intake
+}
+
+// LEFT SIDE
+void autonomousLeft() {
 
   chassis.setPose(-48.36, 16.2, 77.89); // start position
   chassis.turnToPoint(-23.85, 21.6, 100, {.maxSpeed = 120},
@@ -201,20 +188,7 @@ void autonomous() {
   fullIntake.move(127); // run intake
   pros::delay(10000);
   fullIntake.move(0); // run intake
-
-  // piston.set_value(false);
-
-  /*
-
-  chassis.turnToPoint(-26, 47, 2000,{.maxSpeed = 60}); // long goal
-  chassis.moveToPoint(-26, 47, 5000,{.maxSpeed = 60});
-  fullIntake.move(127); // run intake
-  pros::delay(2000);
-  fullIntake.move(0); // run intake
-
-  */
 }
-
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -244,11 +218,13 @@ void opcontrol() {
     chassis.curvature(leftY * direction, rightX);
 
     // intake motors
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) ||
+        controller.get_digital((pros::E_CONTROLLER_DIGITAL_A))) {
       // forward
       topIntake.move(127);
       bottomIntake.move(127);
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) ||
+               controller.get_digital((pros::E_CONTROLLER_DIGITAL_B))) {
       // backward
       topIntake.move(-127);
       bottomIntake.move(-127);
