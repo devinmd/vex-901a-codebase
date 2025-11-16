@@ -16,9 +16,9 @@ pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
 pros::Motor bottomIntake(-6);
 pros::Motor topIntake(-7);
 pros::MotorGroup fullIntake({-6, -7});
-pros::Imu imu(18);
-pros::Rotation horizontal_rotation_sensor(19); // TODO: might be reversed?
-pros::Rotation vertical_rotation_sensor(20);   // TODO: might be reversed?
+pros::Imu imu(5);
+pros::Rotation horizontal_rotation_sensor(19); 
+pros::Rotation vertical_rotation_sensor(20);   
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
@@ -150,44 +150,50 @@ void competition_initialize() {}
  * from where it left off.
  */
 
+/// RIGHT SIDE
+void autonomousRight() {
 
-void autonomous() {
-
-  // DOES NOT WORK THE THETA IS WRONG
-  chassis.setPose(-48.36, -16.2, 77.89); // start position
-  chassis.turnToPoint(-23.85, -21.6, 100, {.maxSpeed = 120},
+  chassis.setPose(-48.36, -16.2, 102.11); // start position
+  chassis.turnToPoint(-23.85, -21.6, 80, {.maxSpeed = 120},
                       false); // middle balls
   fullIntake.move(127);       // run intake
   chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
   // pros::delay(1000);
   fullIntake.move(0); // end intake
-}
-
-// LEFT SIDE
-void autonomousLeft() {
-
-  chassis.setPose(-48.36, 16.2, 77.89); // start position
-  chassis.turnToPoint(-23.85, 21.6, 100, {.maxSpeed = 120},
-                      false); // middle balls
-  fullIntake.move(127);       // run intake
-  chassis.moveToPoint(-17.647, 23.811, 2000, {.maxSpeed = 60}, false);
-  // pros::delay(1000);
-  fullIntake.move(0); // end intake
 
   // move to match loader alignment spot
-  chassis.turnToPoint(-42, 51, 500, {.maxSpeed = 60},
+  chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60},
                       false); // turn to midpoint
-  chassis.moveToPoint(-42, 51, 2000, {.maxSpeed = 60}, false); // go to midpoint
+  chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60},
+                      false); // go to midpoint
 
-  chassis.turnToPoint(-60, 51, 500, {.maxSpeed = 60},
+  chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60},
                       false); // face match loader
 
-  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60},
+  chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
                       true); // back up into goal to align
+}
 
-  fullIntake.move(127); // run intake
+// LEFT SIDE -- THIS WORKS & CAN SCORE 3 BALLS (MATCHLOAD IS DROPPED -- NEED TO FIX THIS)
+void autonomous() {
+
+  // set starting position on left side
+  chassis.setPose(-48.36, 16.2, 77.89);
+  // collect 3 middle balls
+  chassis.turnToPoint(-23.85, 21.6, 100, {.maxSpeed = 120}, false);
+  fullIntake.move(127);
+  chassis.moveToPoint(-17.647, 23.811, 2000, {.maxSpeed = 60}, false);
+  fullIntake.move(0);
+
+  // move to goal & align, then run intake & score
+  chassis.turnToPoint(-42, 51, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, 51, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, 51, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60},
+                      true);
+  fullIntake.move(127);
   pros::delay(10000);
-  fullIntake.move(0); // run intake
+  fullIntake.move(0);
 }
 /**
  * Runs the operator control code. This function will be started in its own task
