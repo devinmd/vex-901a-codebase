@@ -8,17 +8,18 @@
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
 
-//
+// constants
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-pros::adi::DigitalOut piston('A');
-pros::MotorGroup left_mg({-2, 3, -4}, pros::MotorGearset::blue);
-pros::MotorGroup right_mg({8, 9, -10}, pros::MotorGearset::blue);
-pros::Motor bottomIntake(-6);
-pros::Motor topIntake(-7);
-pros::MotorGroup fullIntake({-6, -7});
-pros::Imu imu(5);
-pros::Rotation horizontal_rotation_sensor(19); 
-pros::Rotation vertical_rotation_sensor(20);   
+pros::adi::DigitalOut tonguePiston('B', false);
+pros::adi::DigitalOut conveyorPiston('A', false);
+pros::MotorGroup left_mg({15, -14, -13}, pros::MotorGearset::blue);
+pros::MotorGroup right_mg({3,-2,1}, pros::MotorGearset::blue);
+pros::Motor bottomIntake(-12);
+pros::Motor topIntake(-11);
+pros::MotorGroup fullIntake({-12, -11});
+pros::Imu imu(19);
+pros::Rotation horizontal_rotation_sensor(16);
+pros::Rotation vertical_rotation_sensor(17);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
@@ -75,22 +76,6 @@ lemlib::Chassis chassis(drivetrain,         // drivetrain settings
 );
 
 /**
- * A callback function for LLEMU's center button.
- *
- * When this callback is fired, it will toggle line 2 of the LCD text between
- * "I was pressed!" and nothing.
- */
-void on_center_button() {
-  static bool pressed = false;
-  pressed = !pressed;
-  if (pressed) {
-    pros::lcd::set_text(2, "I was pressed!");
-  } else {
-    pros::lcd::clear_line(2);
-  }
-}
-
-/**
  * Runs initialization code. This occurs as soon as the program is started.
  *
  * All other competition modes are blocked by initialize; it is recommended
@@ -100,24 +85,17 @@ void initialize() {
   pros::lcd::initialize();
   chassis.calibrate();
 
-  // chassis.setPose(-48.36, 16.2, 77.89); // start position
-  // chassis.setPose(0, 0, 0); // start position
-
-  // thread to for brain screen and position logging
+  /*
   pros::Task screenTask([&]() {
     while (true) {
-      // print robot location to the brain screen
-      pros::lcd::print(0, "X: %f", chassis.getPose().x);         // x
-      pros::lcd::print(1, "Y: %f", chassis.getPose().y);         // y
-      pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-      // log position telemetry
+      pros::lcd::print(0, "X: %f", chassis.getPose().x);
+      pros::lcd::print(1, "Y: %f", chassis.getPose().y);
+      pros::lcd::print(2, "Theta: %f", chassis.getPose().theta);
       lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
-      // delay to save resources
       pros::delay(50);
     }
   });
-
-  pros::lcd::register_btn1_cb(on_center_button);
+  */
 }
 
 /**
@@ -150,51 +128,83 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-/// RIGHT SIDE
+// RIGHT SIDE -- TODO
 void autonomousRight() {
-
-  chassis.setPose(-48.36, -16.2, 102.11); // start position
-  chassis.turnToPoint(-23.85, -21.6, 80, {.maxSpeed = 120},
-                      false); // middle balls
-  fullIntake.move(127);       // run intake
-  chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
-  // pros::delay(1000);
-  fullIntake.move(0); // end intake
-
-  // move to match loader alignment spot
-  chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60},
-                      false); // turn to midpoint
-  chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60},
-                      false); // go to midpoint
-
-  chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60},
-                      false); // face match loader
-
-  chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
-                      true); // back up into goal to align
-}
-
-// LEFT SIDE -- THIS WORKS & CAN SCORE 3 BALLS (MATCHLOAD IS DROPPED -- NEED TO FIX THIS)
-void autonomous() {
-
-  // set starting position on left side
-  chassis.setPose(-48.36, 16.2, 77.89);
+  // set starting position on right side
+  chassis.setPose(-48.36, -16.2, 103.8);
   // collect 3 middle balls
-  chassis.turnToPoint(-23.85, 21.6, 100, {.maxSpeed = 120}, false);
+  // chassis.turnToPoint(-23.85, -21.6, 100, {.maxSpeed = 120}, false);
   fullIntake.move(127);
-  chassis.moveToPoint(-17.647, 23.811, 2000, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
   fullIntake.move(0);
 
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-42, 51, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, 51, 2000, {.maxSpeed = 60}, false);
-  chassis.turnToPoint(-60, 51, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60},
+  chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
                       true);
   fullIntake.move(127);
   pros::delay(10000);
   fullIntake.move(0);
 }
+
+void autonomouhyhhys(){
+
+  chassis.setPose(-48.36, 16.2, 77.89);
+  chassis.moveToPoint(-34, 19, 2000, {.maxSpeed = 30}, false);
+
+  // conveyorPiston.set_value(true); // to score mid
+  // pros::delay(1000);
+  // tonguePiston.set_value(false); // lifts tongue
+
+}
+
+// LEFT SIDE -- THIS WORKS & CAN SCORE 3 BALLS (MATCHLOAD IS DROPPED)
+void autonomous() {
+
+  // set starting position on left side
+  chassis.setPose(-48.36, 16.2, 77.89);
+  tonguePiston.set_value(false); // lifts tongue
+  conveyorPiston.set_value(false);
+
+  // collect 3 middle balls (storage)
+  bottomIntake.move(127);
+  chassis.moveToPoint(-23.5, 21.6, 2000, {.maxSpeed = 60}, false);
+  bottomIntake.move(0);
+
+  // drop conveyor
+  conveyorPiston.set_value(true);
+
+  // turn to middle goal, move to it, & score
+  chassis.turnToPoint(-8.6, 8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
+  chassis.moveToPoint(-8.6, 8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
+  fullIntake.move(127);
+  pros::delay(2000);
+  fullIntake.move(0);
+
+  conveyorPiston.set_value(false); // raise
+
+  // move to goal & align, then run intake & score
+  chassis.turnToPoint(-42, 50, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, 50, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, 50, 1000, {.maxSpeed = 60}, false);
+
+  // drop tongue, move to loader, intake
+  bottomIntake.move(127);
+  tonguePiston.set_value(true);
+  pros::delay(200);
+  chassis.moveToPoint(-62, 51, 1500, {.forwards = true, .maxSpeed = 60}, false);
+  bottomIntake.move(0);
+
+  // move to long goal & score
+  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60}, true);
+  pros::delay(3000);
+  fullIntake.move(127);
+  pros::delay(10000);
+  fullIntake.move(0);
+}
+
 /**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -214,7 +224,8 @@ void opcontrol() {
   int direction = -1;
   bool lastX = false;
   bool xPressed = false;
-  bool piston_state = false;
+  bool tonguePistonState = false;
+  bool conveyorPistonState = false;
 
   while (true) {
 
@@ -224,31 +235,33 @@ void opcontrol() {
     chassis.curvature(leftY * direction, rightX);
 
     // intake motors
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) ||
-        controller.get_digital((pros::E_CONTROLLER_DIGITAL_A))) {
-      // forward
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
+      // storage
+      bottomIntake.move(127);
+    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+      // both
       topIntake.move(127);
       bottomIntake.move(127);
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2) ||
-               controller.get_digital((pros::E_CONTROLLER_DIGITAL_B))) {
-      // backward
+    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_R2))) {
+      // reverse
       topIntake.move(-127);
       bottomIntake.move(-127);
     } else {
+      // none
       topIntake.move(0);
       bottomIntake.move(0);
     }
 
-    // piston
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-      piston_state = !piston_state;
-      piston.set_value(piston_state);
+    // middle goal
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+      conveyorPistonState = !conveyorPistonState;
+      conveyorPiston.set_value(conveyorPistonState);
     }
 
-    // trigger auton for testing
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
-      // auton left
-      autonomous();
+    // tongue
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
+      tonguePistonState = !tonguePistonState;
+      tonguePiston.set_value(tonguePistonState);
     }
 
     // invert throttle button
