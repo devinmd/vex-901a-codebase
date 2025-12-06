@@ -129,38 +129,79 @@ void competition_initialize() {}
  */
 
 // RIGHT SIDE -- TODO
-void autonomousRight() {
+//void autonomousRight() {
   // set starting position on right side
-  chassis.setPose(-48.36, -16.2, 103.8);
+  //chassis.setPose(-48.36, -16.2, 103.8);
   // collect 3 middle balls
   // chassis.turnToPoint(-23.85, -21.6, 100, {.maxSpeed = 120}, false);
-  fullIntake.move(127);
-  chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
-  fullIntake.move(0);
+  //fullIntake.move(127);
+  //chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
+  //fullIntake.move(0);
 
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60}, false);
-  chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
-                      true);
+  //chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60}, false);
+  //chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60}, false);
+  //chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60}, false);
+  //chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
+  //                    true);
+  //fullIntake.move(127);
+  //pros::delay(10000);
+  //fullIntake.move(0);
+//}
+
+void autonomou6s(){
+  chassis.setPose(-60.985, -16.06, 98);
+  chassis.moveToPoint(-55.784, -18.564, 2000);
+}
+
+// RIGHT SIDE -- THIS WORKS & CAN SCORE 6 BALLS (MATCHLOAD IS DROPPED)
+void autonom1ousRIGHT() {
+
+  // set starting position on left side
+  chassis.setPose(-48.36, -16.2, 101.89);
+  tonguePiston.set_value(false); // lifts tongue
+  conveyorPiston.set_value(false);
+
+  // collect 3 middle balls (storage)
+  bottomIntake.move(127);
+  chassis.moveToPoint(-23.5, -21.6, 2000, {.maxSpeed = 60}, false);
+  bottomIntake.move(0);
+
+  /*
+  // drop conveyor
+  conveyorPiston.set_value(true);
+
+  // turn to middle goal, move to it, & score
+  chassis.turnToPoint(-8.6, -8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
+  chassis.moveToPoint(-8.6, -8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
+  fullIntake.move(127);
+  pros::delay(2000);
+  fullIntake.move(0);
+
+  conveyorPiston.set_value(false); // raise
+  */
+
+  // move to goal & align, then run intake & score
+  chassis.turnToPoint(-42, -49, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, -49, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, -49, 1000, {.maxSpeed = 60}, false);
+
+  // drop tongue, move to loader, intake
+  bottomIntake.move(127);
+  tonguePiston.set_value(true);
+  pros::delay(500);
+  chassis.moveToPoint(-62, -49, 1500, {.forwards = true, .maxSpeed = 60}, false);
+  bottomIntake.move(0);
+
+  // move to long goal & score
+  chassis.moveToPoint(-10, -49, 10000, {.forwards = false, .maxSpeed = 60}, true);
+  pros::delay(3000);
   fullIntake.move(127);
   pros::delay(10000);
   fullIntake.move(0);
 }
 
-void autonomouhyhhys(){
-
-  chassis.setPose(-48.36, 16.2, 77.89);
-  chassis.moveToPoint(-34, 19, 2000, {.maxSpeed = 30}, false);
-
-  // conveyorPiston.set_value(true); // to score mid
-  // pros::delay(1000);
-  // tonguePiston.set_value(false); // lifts tongue
-
-}
-
-// LEFT SIDE -- THIS WORKS & CAN SCORE 3 BALLS (MATCHLOAD IS DROPPED)
+// LEFT SIDE -- THIS WORKS
 void autonomous() {
 
   // set starting position on left side
@@ -185,21 +226,24 @@ void autonomous() {
 
   conveyorPiston.set_value(false); // raise
 
+  int ylocation = 49;
+
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-42, 50, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, 50, 2000, {.maxSpeed = 60}, false);
-  chassis.turnToPoint(-60, 50, 1000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
 
   // drop tongue, move to loader, intake
-  bottomIntake.move(127);
   tonguePiston.set_value(true);
+  bottomIntake.move(127);
   pros::delay(200);
-  chassis.moveToPoint(-62, 51, 1500, {.forwards = true, .maxSpeed = 60}, false);
-  bottomIntake.move(0);
+  // move into the match load
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60}, false);
+  // bottomIntake.move(0);
 
   // move to long goal & score
-  chassis.moveToPoint(-10, 51, 10000, {.forwards = false, .maxSpeed = 60}, true);
-  pros::delay(3000);
+  chassis.moveToPoint(-10, ylocation, 10000, {.forwards = false, .maxSpeed = 70}, true);
+  pros::delay(1000);
   fullIntake.move(127);
   pros::delay(10000);
   fullIntake.move(0);
