@@ -10,10 +10,11 @@
 
 // constants
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
-pros::adi::DigitalOut tonguePiston('B', false);
-pros::adi::DigitalOut conveyorPiston('A', false);
+pros::adi::DigitalOut tonguePiston('B', true);
+pros::adi::DigitalOut conveyorPiston('C', false);
+pros::adi::DigitalOut wingPiston('A', true);
 pros::MotorGroup left_mg({15, -14, -13}, pros::MotorGearset::blue);
-pros::MotorGroup right_mg({3,-2,1}, pros::MotorGearset::blue);
+pros::MotorGroup right_mg({3, -2, 1}, pros::MotorGearset::blue);
 pros::Motor bottomIntake(-12);
 pros::Motor topIntake(-11);
 pros::MotorGroup fullIntake({-12, -11});
@@ -128,38 +129,12 @@ void competition_initialize() {}
  * from where it left off.
  */
 
-// RIGHT SIDE -- TODO
-//void autonomousRight() {
+// RIGHT SIDE AUTON
+void autonomous() {
+
   // set starting position on right side
-  //chassis.setPose(-48.36, -16.2, 103.8);
-  // collect 3 middle balls
-  // chassis.turnToPoint(-23.85, -21.6, 100, {.maxSpeed = 120}, false);
-  //fullIntake.move(127);
-  //chassis.moveToPoint(-17.647, -23.811, 2000, {.maxSpeed = 60}, false);
-  //fullIntake.move(0);
-
-  // move to goal & align, then run intake & score
-  //chassis.turnToPoint(-42, -51, 500, {.maxSpeed = 60}, false);
-  //chassis.moveToPoint(-42, -51, 2000, {.maxSpeed = 60}, false);
-  //chassis.turnToPoint(-60, -51, 500, {.maxSpeed = 60}, false);
-  //chassis.moveToPoint(-10, -51, 10000, {.forwards = false, .maxSpeed = 60},
-  //                    true);
-  //fullIntake.move(127);
-  //pros::delay(10000);
-  //fullIntake.move(0);
-//}
-
-void autonomou6s(){
-  chassis.setPose(-60.985, -16.06, 98);
-  chassis.moveToPoint(-55.784, -18.564, 2000);
-}
-
-// RIGHT SIDE -- THIS WORKS & CAN SCORE 6 BALLS (MATCHLOAD IS DROPPED)
-void autonom1ousRIGHT() {
-
-  // set starting position on left side
-  chassis.setPose(-48.36, -16.2, 101.89);
-  tonguePiston.set_value(false); // lifts tongue
+  chassis.setPose(-48.36, -16.2, 102.3);
+  tonguePiston.set_value(true); // lifts tongue
   conveyorPiston.set_value(false);
 
   // collect 3 middle balls (storage)
@@ -167,46 +142,56 @@ void autonom1ousRIGHT() {
   chassis.moveToPoint(-23.5, -21.6, 2000, {.maxSpeed = 60}, false);
   bottomIntake.move(0);
 
-  /*
-  // drop conveyor
-  conveyorPiston.set_value(true);
-
-  // turn to middle goal, move to it, & score
-  chassis.turnToPoint(-8.6, -8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
-  chassis.moveToPoint(-8.6, -8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
-  fullIntake.move(127);
-  pros::delay(2000);
-  fullIntake.move(0);
-
-  conveyorPiston.set_value(false); // raise
-  */
+  int ylocation = -49;
 
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-42, -49, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, -49, 2000, {.maxSpeed = 60}, false);
-  chassis.turnToPoint(-60, -49, 1000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 60}, false);
+  chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
 
   // drop tongue, move to loader, intake
+  tonguePiston.set_value(false);
   bottomIntake.move(127);
-  tonguePiston.set_value(true);
-  pros::delay(500);
-  chassis.moveToPoint(-62, -49, 1500, {.forwards = true, .maxSpeed = 60}, false);
-  bottomIntake.move(0);
+  pros::delay(200);
+  // move into the match load
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60},
+                      false);
 
-  // move to long goal & score
-  chassis.moveToPoint(-10, -49, 10000, {.forwards = false, .maxSpeed = 60}, true);
-  pros::delay(3000);
+  // drive into long goal
+  chassis.moveToPoint(-22, ylocation, 5000, {.forwards = false, .maxSpeed = 70},
+                      true);
+  pros::delay(1000);
+  // start scoring
   fullIntake.move(127);
-  pros::delay(10000);
+  pros::delay(3000);
   fullIntake.move(0);
+
+  tonguePiston.set_value(true);
+
+  // use wing
+
+  // move backward
+    chassis.moveToPoint(-42, ylocation, 1000, {.maxSpeed = 60}, false);
+
+  /*
+    chassis.turnToPoint(-26.5, -58, 500, {.forwards = false, .maxSpeed = 70},
+                        false);
+
+    chassis.moveToPoint(-26.53, -58, 2000, {.forwards = true, .maxSpeed = 70},
+                        false);
+
+    chassis.turnToPoint(-10.2, -58, 500, {.forwards = true, .maxSpeed = 60},
+                        false);
+    chassis.moveToPoint(-10.2, -58, 2000, {.forwards = true, .maxSpeed = 60},
+                        false);*/
 }
 
 // LEFT SIDE -- THIS WORKS
-void autonomous() {
+void autonomouslef() {
 
   // set starting position on left side
   chassis.setPose(-48.36, 16.2, 77.89);
-  tonguePiston.set_value(false); // lifts tongue
+  tonguePiston.set_value(true); // lifts tongue
   conveyorPiston.set_value(false);
 
   // collect 3 middle balls (storage)
@@ -218,8 +203,18 @@ void autonomous() {
   conveyorPiston.set_value(true);
 
   // turn to middle goal, move to it, & score
-  chassis.turnToPoint(-8.6, 8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
-  chassis.moveToPoint(-8.6, 8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
+  chassis.turnToPoint(-8.6, 8.3, 500,
+                      {
+                          .forwards = false,
+                          .maxSpeed = 60,
+                      },
+                      false);
+  chassis.moveToPoint(-8.6, 8.3, 1000,
+                      {
+                          .forwards = false,
+                          .maxSpeed = 60,
+                      },
+                      false);
   fullIntake.move(127);
   pros::delay(2000);
   fullIntake.move(0);
@@ -234,15 +229,17 @@ void autonomous() {
   chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
 
   // drop tongue, move to loader, intake
-  tonguePiston.set_value(true);
+  tonguePiston.set_value(false);
   bottomIntake.move(127);
   pros::delay(200);
   // move into the match load
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60}, false);
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60},
+                      false);
   // bottomIntake.move(0);
 
   // move to long goal & score
-  chassis.moveToPoint(-10, ylocation, 10000, {.forwards = false, .maxSpeed = 70}, true);
+  chassis.moveToPoint(-10, ylocation, 10000,
+                      {.forwards = false, .maxSpeed = 70}, true);
   pros::delay(1000);
   fullIntake.move(127);
   pros::delay(10000);
@@ -270,6 +267,7 @@ void opcontrol() {
   bool xPressed = false;
   bool tonguePistonState = false;
   bool conveyorPistonState = false;
+  bool wingPistonState = false;
 
   while (true) {
 
@@ -306,6 +304,12 @@ void opcontrol() {
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
       tonguePistonState = !tonguePistonState;
       tonguePiston.set_value(tonguePistonState);
+    }
+
+    // wing
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
+      wingPistonState = !wingPistonState;
+      wingPiston.set_value(wingPistonState);
     }
 
     // invert throttle button
