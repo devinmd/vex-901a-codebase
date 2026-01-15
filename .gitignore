@@ -16,6 +16,8 @@ temp.errors
 *.ini
 .d/
 
+.DS_Store
+
 include
 firmware
-.DS_Store
+

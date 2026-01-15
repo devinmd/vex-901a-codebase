@@ -1,12 +1,11 @@
 #include "autonomous.h"
+#include "motors.h"
 
 /*
 forward is the tongue side
 */
 
-void autonomousSkills()
-
-{
+void autonomousSkills() {
   int leftLongGoalY = 49;
 
   // starting position
@@ -43,18 +42,16 @@ void autonomousSkills()
   tonguePiston.set_value(false);
 }
 
-// SKILLS AUTON (JUST PARK)
+// SKILLS AUTON (JUST PARK AND CLEAR)
 void autonomousSkillsPark() {
 
   chassis.setPose(-61.7, -17, 0);
   tonguePiston.set_value(true);    // lifts tongue
   conveyorPiston.set_value(false); // raise conveyor
 
-  // move backward
-  chassis.moveToPoint(-61.7, -27, 5000, {.forwards = false, .maxSpeed = 60},
-                      false);
+  bottomIntake.move(127); // run intake
   // move forward and clear park zone
-  chassis.moveToPoint(-61.7, 0, 5000, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-61.7, 1, 5000, {.maxSpeed = 70}, false);
 }
 
 // RIGHT SIDE AUTON

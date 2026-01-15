@@ -13,7 +13,7 @@
 #include "autonomous.h"
 #include "motors.h"
 
-void autonomous(){
+void autonomous() {
   // autonomousRight();
   autonomousLeft();
   // autonomousSkills();
