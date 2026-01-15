@@ -19,7 +19,7 @@ pros::Motor bottomIntake(-12);
 pros::Motor topIntake(-11);
 pros::MotorGroup fullIntake({-12, -11});
 pros::Imu imu(19);
-pros::Rotation horizontal_rotation_sensor(16);
+// pros::Rotation horizontal_rotation_sensor(16);
 pros::Rotation vertical_rotation_sensor(17);
 
 // drivetrain settings
@@ -27,14 +27,16 @@ lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
                               lemlib::Omniwheel::NEW_325, 450, 2);
 
 // tracking wheels
+/*
 lemlib::TrackingWheel horizontal_tracking_wheel(&horizontal_rotation_sensor,
-                                                lemlib::Omniwheel::NEW_2,
-                                                0); // TODO: set offset distance
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor,
-                                              lemlib::Omniwheel::NEW_2,
-                                              0); // TODO: set offset distance
+                                               lemlib::Omniwheel::NEW_2,
+                                               0); // TODO: set offset distance
+*/
 
-// lateral PID controller
+lemlib::TrackingWheel vertical_tracking_wheel(
+    &vertical_rotation_sensor, lemlib::Omniwheel::NEW_275,
+    0); // TODO: set offset distance // lateral PID controller
+
 lemlib::ControllerSettings
     lateral_controller(13,  //
                        0,   //
@@ -64,9 +66,9 @@ lemlib::ControllerSettings
 lemlib::OdomSensors sensors(
     &vertical_tracking_wheel, // vertical tracking wheel 1, set to null
     nullptr, // vertical tracking wheel 2, set to nullptr as we are using IMEs
-    &horizontal_tracking_wheel, // horizontal tracking wheel 1
-    nullptr,                    // horizontal tracking wheel 2, set to nullptr
-    &imu                        // inertial sensor
+    nullptr, // horizontal tracking wheel 1
+    nullptr, // horizontal tracking wheel 2, set to nullptr
+    &imu     // inertial sensor
 );
 
 // create the chassis
@@ -130,13 +132,50 @@ void competition_initialize() {}
  */
 
 /*
-
-forward is the roller intake side
-
+forward is the tongue side
 */
 
-// SKILLS AUTON
-void autonomouskki() {
+void autonomousskills()
+
+{
+  int leftLongGoalY = 49;
+
+  // starting position
+  chassis.setPose(-48, 15, 0);
+  // drive to align with matchloader
+  chassis.moveToPose(-48, leftLongGoalY, 270, 1000,
+                     {.forwards = true, .maxSpeed = 90}, false);
+  // drop tongue
+  tonguePiston.set_value(false);
+  bottomIntake.move(127);
+  pros::delay(200);
+  // move into the match load
+  chassis.moveToPoint(-62, leftLongGoalY, 2000,
+                      {.forwards = true, .maxSpeed = 60}, false);
+  // back out
+  chassis.moveToPose(-48, leftLongGoalY, 1000, 270,
+                     {.forwards = false, .maxSpeed = 90}, false);
+
+  int leftOutsideLongGoalY = 60;
+
+  // raise tongue
+  tonguePiston.set_value(true);
+  // drive to other side
+  chassis.moveToPose(-36, leftOutsideLongGoalY, 90, 1000,
+                     {.forwards = false, .maxSpeed = 90}, false);
+  chassis.moveToPose(36, leftOutsideLongGoalY, 135, 1000,
+                     {.forwards = false, .maxSpeed = 90}, false);
+  chassis.moveToPose(48, leftLongGoalY, 270, 1000,
+                     {.forwards = false, .maxSpeed = 90}, false);
+  // drive into long goal & score
+
+  // move to match load
+  // drop tongue
+  tonguePiston.set_value(false);
+}
+
+// SKILLS AUTON (JUST PARK)
+void autonomousskillspark() {
 
   chassis.setPose(-61.7, -17, 0);
   tonguePiston.set_value(true);    // lifts tongue
@@ -150,8 +189,7 @@ void autonomouskki() {
 }
 
 // RIGHT SIDE AUTON
-void autonomousright() {
-
+void autonomous() {
   // set starting position on right side
   chassis.setPose(-48.36, -16.2, 102.3);
   tonguePiston.set_value(true);    // lifts tongue
@@ -162,11 +200,11 @@ void autonomousright() {
   chassis.moveToPoint(-23.5, -21.6, 2000, {.maxSpeed = 60}, false);
   bottomIntake.move(0);
 
-  int ylocation = -49;
+  int ylocation = -47;
 
   // move to goal & align, then run intake & score
   chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 80}, false);
   chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
 
   // drop tongue, move to loader, intake
@@ -174,9 +212,8 @@ void autonomousright() {
   bottomIntake.move(127);
   pros::delay(200);
   // move into the match load
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60},
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 50},
                       false);
-
   // drive into long goal
   chassis.moveToPoint(-22, ylocation, 5000, {.forwards = false, .maxSpeed = 70},
                       true);
@@ -196,8 +233,6 @@ void autonomousright() {
   chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100},
                       true);
 
-
-      
   /*
     chassis.turnToPoint(-26.5, -58, 500, {.forwards = false, .maxSpeed = 70},
                         false);
@@ -212,7 +247,7 @@ void autonomousright() {
 }
 
 // LEFT SIDE -- THIS WORKS
-void autonomous() {
+void autonomousl() {
 
   // set starting position on left side
   chassis.setPose(-48.36, 16.2, 77.89);
@@ -238,10 +273,10 @@ void autonomous() {
                       },
                       false);
   // move to middle goal
-  chassis.moveToPoint(-6.6, 8.3, 1000, // CAN BE FASTER
+  chassis.moveToPoint(-6.6, 8.3, 1000,
                       {
                           .forwards = false,
-                          .maxSpeed = 60, // 60 works
+                          .maxSpeed = 60,
                       },
                       false);
   // drop conveyor -- DROP HERE????? -- TEST THIS
