@@ -9,5 +9,7 @@ void autonomousSkills();
 void autonomousSkillsPark();
 void autonomousRight(); // Right side
 void autonomousLeft(); // Left side
+void tuneAngularPID();
+void tuneLateralPID();
 
 #endif // AUTONOMOUS_H

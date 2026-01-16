@@ -5,37 +5,64 @@
 forward is the tongue side
 */
 
+void tuneLateralPID() {
+  chassis.setPose(0, 0, 0);
+  chassis.moveToPoint(0, 48, 100000, {.forwards = true});
+}
+
+void tuneAngularPID() {
+  chassis.setPose(0, 0, 0);
+  chassis.turnToHeading(90, 1000000); // run faster when it gets better tuned
+}
+
 void autonomousSkills() {
-  int leftLongGoalY = 49;
+  int leftLongGoalY = 47;
 
   // starting position
   chassis.setPose(-48, 15, 0);
   // drive to align with matchloader
-  chassis.moveToPose(-48, leftLongGoalY, 270, 1000,
-                     {.forwards = true, .maxSpeed = 90}, false);
+
+  chassis.moveToPoint(-48, leftLongGoalY, 1000,
+                      {.forwards = true, .maxSpeed = 90}, false);
   // drop tongue
   tonguePiston.set_value(false);
   bottomIntake.move(127);
   pros::delay(200);
   // move into the match load
+  chassis.turnToPoint(-62, leftLongGoalY, 500);
   chassis.moveToPoint(-62, leftLongGoalY, 2000,
                       {.forwards = true, .maxSpeed = 60}, false);
-  // back out
-  chassis.moveToPose(-48, leftLongGoalY, 1000, 270,
-                     {.forwards = false, .maxSpeed = 90}, false);
 
-  int leftOutsideLongGoalY = 60;
+  // back out
+  chassis.moveToPoint(-48, leftLongGoalY, 1000,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
+  int leftOutsideLongGoalY = 62;
 
   // raise tongue
   tonguePiston.set_value(true);
   // drive to other side
-  chassis.moveToPose(-36, leftOutsideLongGoalY, 90, 1000,
-                     {.forwards = false, .maxSpeed = 90}, false);
-  chassis.moveToPose(36, leftOutsideLongGoalY, 135, 1000,
-                     {.forwards = false, .maxSpeed = 90}, false);
-  chassis.moveToPose(48, leftLongGoalY, 270, 1000,
-                     {.forwards = false, .maxSpeed = 90}, false);
+  chassis.turnToPoint(-36, leftOutsideLongGoalY, 1000,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
+  chassis.moveToPoint(-36, leftOutsideLongGoalY, 1000,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
+  chassis.turnToPoint(36, 60, 500, {.forwards = false, .maxSpeed = 90}, false);
+
+  chassis.moveToPoint(36, leftLongGoalY, 2000,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
+  chassis.turnToPoint(28, leftLongGoalY, 500,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
+  chassis.moveToPoint(28, leftLongGoalY, 2000,
+                      {.forwards = false, .maxSpeed = 90}, false);
+
   // drive into long goal & score
+
+  // reset position in long goal at far left side
+  chassis.setPose(30, 48, 90);
 
   // move to match load
   // drop tongue
