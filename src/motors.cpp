@@ -46,28 +46,30 @@ or shaking
 
   */
 
+/*
+
+increase kP until it turns quickly and overshoots a bit
+stop increasing when it slightly overshoots
+if it spins or vibrates crazy then its too high
+
+increase kD until it stops perfectly at 90 degrees and stops smoothly without
+bouncing angular kD usually higher than lateral
+
+if it consistently stops at less than 90 degrees, increase kI a little to help
+it get there
+
+
+*/
+
+
+// TUNED AS OF JANUARY 16 2026
 int lateral_kP = 10; // 10-14 good // was 12
 int lateral_kI = 0;
 int lateral_kD = 90; // was 70
 
-/*
-
- increase kP until it turns quickly and overshoots a bit
- stop increasing when it slightly overshoots
- if it spins or vibrates crazy then its too high
-
- increase kD until it stops perfectly at 90 degrees and stops smoothly without
- bouncing angular kD usually higher than lateral
-
- if it consistently stops at less than 90 degrees, increase kI a little to help
- it get there
-
-
- */
-
 int angular_kP = 3; // 2 is no oscillation, 4 is slight, 3 is slight
 int angular_kI = 0;
-int angular_kD = 18;    // 30 too much, 20 good, 16 too little
+int angular_kD = 18; // 30 too much, 20 good, 16 too little
 
 // Lateral PID controller
 // set all other to 0 when tuning
@@ -87,12 +89,12 @@ lemlib::ControllerSettings
 // TUNED AS OF JANUARY 16 2026
 lemlib::ControllerSettings
     angular_controller(angular_kP, angular_kI, angular_kD,
-                       0,   // anti windup
-                       0,   // small error range, in inches
+                       0, // anti windup
+                       0, // small error range, in inches
                        0, // small error range timeout, in milliseconds
-                       0,   // large error range, in inches
+                       0, // large error range, in inches
                        0, // large error range timeout, in milliseconds
-                       0    // maximum acceleration (slew)
+                       0  // maximum acceleration (slew)
     );
 
 // Odometry settings
