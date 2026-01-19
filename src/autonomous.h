@@ -11,5 +11,6 @@ void autonomousRight(); // Right side
 void autonomousLeft(); // Left side
 void tuneAngularPID();
 void tuneLateralPID();
+void autonomousSoloAWP();
 
 #endif // AUTONOMOUS_H

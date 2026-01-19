@@ -1,3 +1,5 @@
+// clang-format off
+
 #include "autonomous.h"
 #include "motors.h"
 
@@ -5,68 +7,174 @@
 forward is the tongue side
 */
 
+/*
+
+TODO
+
+figure out good speed for the long distance moves
+figure out good speed for short distance moves
+
+figure out good speed for turns
+figure out good timeout for turns
+
+*/
+
+void testSpeed(){
+
+  //
+  const int moveSpeed = 127;
+  const int rotateSpeed = 127;
+
+  chassis.setPose(0, 0, 0);
+  chassis.moveToPoint(0, 48, 2000, {.forwards = true, .maxSpeed=moveSpeed});
+  
+  pros::delay(1000);
+  
+  chassis.setPose(0, 0, 0);
+  chassis.turnToHeading(90, 500, {.maxSpeed=rotateSpeed});
+
+  chassis.setPose(0, 0, 0);
+  chassis.turnToHeading(90, 500, {.maxSpeed=rotateSpeed});
+}
+
 void tuneLateralPID() {
   chassis.setPose(0, 0, 0);
-  chassis.moveToPoint(0, 48, 100000, {.forwards = true});
+  chassis.moveToPoint(0, 48, 10000, {.forwards = true});
 }
 
 void tuneAngularPID() {
   chassis.setPose(0, 0, 0);
-  chassis.turnToHeading(90, 1000000); // run faster when it gets better tuned
+  chassis.turnToHeading(90, 10000);
 }
 
 void autonomousSkills() {
-  int leftLongGoalY = 47;
 
   // starting position
   chassis.setPose(-48, 15, 0);
-  // drive to align with matchloader
 
-  chassis.moveToPoint(-48, leftLongGoalY, 1000,
-                      {.forwards = true, .maxSpeed = 90}, false);
-  // drop tongue
+  const int leftLongGoalY = 48;
+
+  // drive to align with matchloader (midpoint)
+  chassis.moveToPoint(-48, 48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // drop tongue & start storage intake
   tonguePiston.set_value(false);
   bottomIntake.move(127);
   pros::delay(200);
+
   // move into the match load
-  chassis.turnToPoint(-62, leftLongGoalY, 500);
-  chassis.moveToPoint(-62, leftLongGoalY, 2000,
-                      {.forwards = true, .maxSpeed = 60}, false);
+  chassis.turnToPoint(-62, 48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-62, 48, 1000, {.forwards=true, .maxSpeed=70}, false);
 
   // back out
-  chassis.moveToPoint(-48, leftLongGoalY, 1000,
-                      {.forwards = false, .maxSpeed = 90}, false);
-
-  int leftOutsideLongGoalY = 62;
+  chassis.moveToPoint(-48, 48, 1000, {.forwards=false, .maxSpeed=70}, false);
 
   // raise tongue
   tonguePiston.set_value(true);
+
+  const int leftOutsideLongGoalY = 62;
+ 
   // drive to other side
-  chassis.turnToPoint(-36, leftOutsideLongGoalY, 1000,
-                      {.forwards = false, .maxSpeed = 90}, false);
-
-  chassis.moveToPoint(-36, leftOutsideLongGoalY, 1000,
-                      {.forwards = false, .maxSpeed = 90}, false);
-
-  chassis.turnToPoint(36, 60, 500, {.forwards = false, .maxSpeed = 90}, false);
-
-  chassis.moveToPoint(36, leftLongGoalY, 2000,
-                      {.forwards = false, .maxSpeed = 90}, false);
-
-  chassis.turnToPoint(28, leftLongGoalY, 500,
-                      {.forwards = false, .maxSpeed = 90}, false);
-
-  chassis.moveToPoint(28, leftLongGoalY, 2000,
-                      {.forwards = false, .maxSpeed = 90}, false);
+  chassis.turnToPoint(-36, 62, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-36, 62, 1000, {.forwards=false, .maxSpeed=70}, false);
+  chassis.turnToPoint(36, 62, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(36, 62, 1000, {.forwards=false, .maxSpeed=70}, false);
+  chassis.turnToPoint(36, 48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(36, 48, 1000, {.forwards=false, .maxSpeed=70}, false);
 
   // drive into long goal & score
+  chassis.turnToPoint(20, 48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(20, 48, 1000, {.forwards=false, .maxSpeed=70}, false);
+  // TODO add scoring here
 
-  // reset position in long goal at far left side
+  // TODO reset position in long goal
   chassis.setPose(30, 48, 90);
 
-  // move to match load
   // drop tongue
   tonguePiston.set_value(false);
+
+  // back out to match loader
+  chassis.turnToPoint(62, 48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(62, 48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // move back into goal and score
+  chassis.turnToPoint(20, 48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(20, 48, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // raise tongue
+  tonguePiston.set_value(true);
+
+  // back out of long goal
+  chassis.turnToPoint(48, 48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(48, 48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // move to align with park
+  chassis.turnToPoint(64, 24, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(64, 24, 1000, {.forwards=true, .maxSpeed=70}, false);
+  // TODO: RUN INTAKE
+
+  // go through park
+  chassis.turnToPoint(64, -17.4, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(64, -17.4, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // go toward mid goal
+  chassis.turnToPoint(24, -24, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(24, -24, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // go into mid goal
+  chassis.turnToPoint(10, -10, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(10, -10, 1000, {.forwards=false, .maxSpeed=70}, false);
+  // TODO: score mid goal
+
+  // move out
+  chassis.turnToPoint(48, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(48, -48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // go into match loader
+  chassis.turnToPoint(62, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(62, -48, 1000, {.forwards=true, .maxSpeed=70}, false);
+  // TOOD: tongue & intake
+
+  // back out
+  chassis.turnToPoint(48, -48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(48, -48, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // drive to other side
+  chassis.turnToPoint(36, -62, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(36, -62, 1000, {.forwards=false, .maxSpeed=70}, false);
+  chassis.turnToPoint(-36, -62, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-36, -62, 1000, {.forwards=false, .maxSpeed=70}, false);
+  chassis.turnToPoint(-36, -48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-36, -48, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // drive into long goal
+  chassis.turnToPoint(-20, -48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-20, -48, 1000, {.forwards=false, .maxSpeed=70}, false);
+  // TODO: score
+  // TODO: rest position
+  // TODO: tongue
+
+  // drive into match loader
+  chassis.turnToPoint(-62, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-62, -48, 1000, {.forwards=true, .maxSpeed=70}, false);
+  // TODO: intake
+
+  // drive back to long goal
+  chassis.turnToPoint(-20, -48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-20, -48, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // back out
+  chassis.turnToPoint(-48, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-48, -48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // align with park
+  chassis.turnToPoint(-64, -24, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-64, -24, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // park 
+  chassis.turnToPoint(-64, 2, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-64, 2, 1000, {.forwards=true, .maxSpeed=70}, false);
+
 }
 
 // SKILLS AUTON (JUST PARK AND CLEAR)
@@ -93,7 +201,7 @@ void autonomousRight() {
   chassis.moveToPoint(-23.5, -21.6, 2000, {.maxSpeed = 60}, false);
   bottomIntake.move(0);
 
-  int ylocation = -47;
+  const int ylocation = -47;
 
   // move to goal & align, then run intake & score
   chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 60}, false);
@@ -104,39 +212,31 @@ void autonomousRight() {
   tonguePiston.set_value(false);
   bottomIntake.move(127);
   pros::delay(200);
+  
   // move into the match load
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 50},
-                      false);
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 50}, false);
+  
   // drive into long goal
-  chassis.moveToPoint(-22, ylocation, 5000, {.forwards = false, .maxSpeed = 70},
-                      true);
+  chassis.moveToPoint(-22, ylocation, 5000, {.forwards = false, .maxSpeed = 70}, true);
   pros::delay(1000);
+
   // start scoring
   fullIntake.move(127);
   pros::delay(3000);
   fullIntake.move(0);
 
-  tonguePiston.set_value(true);
-
-  // use wing
-
-  // move backward then punch
+  // move backward then punch with hood
   chassis.moveToPoint(-39, ylocation, 1000, {.maxSpeed = 60}, false);
-
-  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100},
-                      true);
+  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100}, true);
 
   /*
-    chassis.turnToPoint(-26.5, -58, 500, {.forwards = false, .maxSpeed = 70},
-                        false);
+    // use wing
+    chassis.turnToPoint(-26.5, -58, 500, {.forwards = false, .maxSpeed = 70}, false);
+    chassis.moveToPoint(-26.53, -58, 2000, {.forwards = true, .maxSpeed = 70}, false);
+    chassis.turnToPoint(-10.2, -58, 500, {.forwards = true, .maxSpeed = 60}, false);
+    chassis.moveToPoint(-10.2, -58, 2000, {.forwards = true, .maxSpeed = 60}, false);
+  */
 
-    chassis.moveToPoint(-26.53, -58, 2000, {.forwards = true, .maxSpeed = 70},
-                        false);
-
-    chassis.turnToPoint(-10.2, -58, 500, {.forwards = true, .maxSpeed = 60},
-                        false);
-    chassis.moveToPoint(-10.2, -58, 2000, {.forwards = true, .maxSpeed = 60},
-                        false);*/
 }
 
 // LEFT SIDE -- THIS WORKS
@@ -152,26 +252,17 @@ void autonomousLeft() {
   bottomIntake.move(127);
   // move to 3 middle balls
   chassis.moveToPoint(-23.5, 21.6, 2000, {.maxSpeed = 60}, false);
-  // stop intake -- DO WE NEED THIS? BETTER TO CYCLE BALLS?
-  bottomIntake.move(0);
+  // drop tongue (catch the last ball)
+  tonguePiston.set_value(false);
 
   // go to mid-top goal
   // drop conveyor -- MAYBE DROP AFTER WE ARE AT GOAL?
   conveyorPiston.set_value(true);
   // turn to middle goal
-  chassis.turnToPoint(-6.6, 8.3, 500,
-                      {
-                          .forwards = false,
-                          .maxSpeed = 60,
-                      },
-                      false);
+  chassis.turnToPoint(-6.6, 8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
   // move to middle goal
-  chassis.moveToPoint(-6.6, 8.3, 1000,
-                      {
-                          .forwards = false,
-                          .maxSpeed = 60,
-                      },
-                      false);
+  chassis.moveToPoint(-6.6, 8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
+
   // drop conveyor -- DROP HERE????? -- TEST THIS
   conveyorPiston.set_value(true);
   // run intake to score balls to middle goal
@@ -183,12 +274,11 @@ void autonomousLeft() {
   // stop intake
   fullIntake.move(0);
 
-  int ylocation = 50;
+  const int ylocation = 50;
 
   // move to mid position
   chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 100}, false);
-  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 70},
-                      false); // 60 speed works
+  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 70}, false); // 60 speed works
   chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
 
   // drop tongue
@@ -198,12 +288,10 @@ void autonomousLeft() {
   // give time for tongue to drop
   pros::delay(200);
   // move into the match load and get balls
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60},
-                      false);
+  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60}, false);
 
   // move to long goal
-  chassis.moveToPoint(-22, ylocation, 3000, {.forwards = false, .maxSpeed = 70},
-                      true);
+  chassis.moveToPoint(-22, ylocation, 3000, {.forwards = false, .maxSpeed = 70}, true);
   // wait until bot gets to long goal
   pros::delay(1000);
   // score long goal
@@ -213,6 +301,75 @@ void autonomousLeft() {
 
   // move back then come back and punch
   chassis.moveToPoint(-39, ylocation, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100},
-                      true);
+  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100}, true);
+}
+
+void autonomousSoloAWP(){
+  chassis.setPose(-47, 0, 180);
+  
+  // push teammate off park zone barrier
+  chassis.moveToPoint(-47, 4, 1000, {.forwards=false, .maxSpeed=40}, false);
+
+  // drive to align with matchloader (midpoint)
+  chassis.moveToPoint(-47, -48, 1000, {.forwards=true, .maxSpeed=90}, false);
+
+  // drop tongue & start intake
+  tonguePiston.set_value(false);
+  bottomIntake.move(127);
+
+  // move into match loader
+  chassis.turnToPoint(-62, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-62, -48, 2000, {.forwards=true, .maxSpeed=70}, false);
+
+  // move into long goal
+  chassis.turnToPoint(-22, -48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-22, -48, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // score long goal
+  fullIntake.move(127);
+  pros::delay(2000);
+  fullIntake.move(0);
+
+  // back out
+  chassis.turnToPoint(-36, -48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-36, -48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // go to mid 3 balls
+  bottomIntake.move(127);
+  chassis.turnToPoint(-24, -24, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-24, -24, 1000, {.forwards=true, .maxSpeed=70}, false);
+  // tonguePiston.set_value(false); // lower tongue to catch last ball
+
+  // go to left side mid 3 balls (longer traverse)
+  chassis.turnToPoint(-24, 24, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-24, 24, 2000, {.forwards=true, .maxSpeed=90}, false);
+  // tonguePiston.set_value(false); // lower tongue to catch last ball
+
+  // go to mid goal
+  chassis.turnToPoint(-7, 7, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-7, 7, 1000, {.forwards=false, .maxSpeed=70}, false);
+
+  // score mid goal
+  conveyorPiston.set_value(true);
+  fullIntake.move(127);
+  pros::delay(2000);
+  conveyorPiston.set_value(false);
+  fullIntake.move(0);
+
+  // go to left match loader align midpoint
+  chassis.turnToPoint(-48, 48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-48, 48, 1000, {.forwards=true, .maxSpeed=90}, false);
+
+  // drop tongue & start intake
+  tonguePiston.set_value(false);
+  bottomIntake.move(127);
+
+  // go into left match loader
+  chassis.turnToPoint(-62, 48, 500, {.forwards=true, .maxSpeed=70}, false);
+  chassis.moveToPoint(-62, 48, 1000, {.forwards=true, .maxSpeed=70}, false);
+
+  // score left long goal
+  chassis.turnToPoint(-22, 48, 500, {.forwards=false, .maxSpeed=70}, false);
+  chassis.moveToPoint(-22, 48, 1000, {.forwards=false, .maxSpeed=70}, false);
+  fullIntake.move(127);
 }

@@ -13,14 +13,13 @@
 #include "autonomous.h"
 #include "motors.h"
 
-
-
 // select autonomous here
 
 void autonomous() {
+  autonomousSoloAWP();
   // autonomousRight();
   // autonomousLeft();
-  autonomousSkills();
+  // autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();
@@ -35,6 +34,9 @@ void autonomous() {
 void initialize() {
   pros::lcd::initialize();
   chassis.calibrate();
+
+  tonguePiston.set_value(true);    // lifts tongue
+  conveyorPiston.set_value(false); // raise conveyor
 
   /*
   pros::Task screenTask([&]() {
