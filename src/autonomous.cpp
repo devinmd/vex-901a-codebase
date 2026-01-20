@@ -312,20 +312,18 @@ void autonomousSoloAWP(){
   // push teammate off park zone barrier
   chassis.moveToPoint(-47, 4, 1000, {.forwards=false, .maxSpeed=40}, false);
   // drive to align with matchloader (midpoint)
-  chassis.moveToPoint(-47, -47, 1200, {.maxSpeed = 90}, false);
-  
-  // drop tongue & start intake
+  chassis.moveToPoint(-47, -47, 2000, {.maxSpeed = 90}, false);
+
+  // move into match loader & drop tongue & run intake
+  chassis.turnToPoint(-62, -47, 500, {.forwards=true, .maxSpeed = 80}, false);
   tonguePiston.set_value(false);
   bottomIntake.move(127);
-  pros::delay(300);
-
-  // move into match loader
-  chassis.turnToPoint(-57, -47, 500, {.forwards=true, .maxSpeed = 80}, false);
-  chassis.moveToPoint(-57, -47, 1100, {.forwards=true, .maxSpeed = 70}, false);
+  pros::delay(200);
+  chassis.moveToPoint(-62, -47, 1100, {.forwards=true, .maxSpeed = 70}, false);
 
   // move into long goal
   chassis.moveToPoint(-24, -47, 2000, {.forwards = false, .maxSpeed = 75}, true);
-  pros::delay(1200); // allow time to drive into goal
+  pros::delay(1000); // allow time to drive into goal
   fullIntake.move(127); // start scoring
   pros::delay(800); // time to score
   fullIntake.move(0); // stop scoring
@@ -338,7 +336,7 @@ void autonomousSoloAWP(){
   bottomIntake.move(127);
   chassis.turnToPoint(-22.5, -22.5, 400, {.forwards=true, .maxSpeed=80}, false);
   chassis.moveToPoint(-22.5, -22.5, 1100, {.forwards=true, .maxSpeed=100}, true);
-  pros::delay(300);
+  pros::delay(200);
   tonguePiston.set_value(false); // drop tongue to grab last ball
 
   // go to left side mid 3 balls (longer traverse)

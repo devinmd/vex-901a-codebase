@@ -38,6 +38,8 @@ void initialize() {
   tonguePiston.set_value(true);    // lifts tongue
   conveyorPiston.set_value(false); // raise conveyor
 
+  pros::delay(500);
+
   /*
   pros::Task screenTask([&]() {
     while (true) {
