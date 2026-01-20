@@ -192,51 +192,41 @@ void autonomousSkillsPark() {
 // RIGHT SIDE AUTON
 void autonomousRight() {
   // set starting position on right side
-  chassis.setPose(-48.36, -16.2, 102.3);
+  chassis.setPose(-48.36, -16.2, 103.692);
   tonguePiston.set_value(true);    // lifts tongue
   conveyorPiston.set_value(false); // raise conveyor
 
   // collect 3 middle balls (storage)
   bottomIntake.move(127);
-  chassis.moveToPoint(-23.5, -21.6, 2000, {.maxSpeed = 60}, false);
+  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 50}, false);
   bottomIntake.move(0);
 
-  const int ylocation = -47;
-
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 80}, false);
-  chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
+  chassis.turnToPoint(-47, -47, 500, {.maxSpeed=80}, false);
+  chassis.moveToPoint(-47, -47, 1600, {.maxSpeed=90}, false);
+  chassis.turnToPoint(-58, -47, 800, {.maxSpeed=80}, false);
 
   // drop tongue, move to loader, intake
-  tonguePiston.set_value(false);
   bottomIntake.move(127);
-  pros::delay(200);
-  
-  // move into the match load
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 50}, false);
-  
-  // drive into long goal
-  chassis.moveToPoint(-22, ylocation, 5000, {.forwards = false, .maxSpeed = 70}, true);
-  pros::delay(1000);
+  tonguePiston.set_value(false);
+  pros::delay(400);
+  chassis.moveToPoint(-58, -47, 1500, {.maxSpeed = 75}, false);
 
-  // start scoring
+  // move to long goal & score
+  chassis.moveToPoint(-24, -47, 4000, {.forwards = false, .maxSpeed = 80}, true);
+  pros::delay(1500);
+  bottomIntake.move(0);
   fullIntake.move(127);
-  pros::delay(3000);
+  pros::delay(2500);
   fullIntake.move(0);
 
-  // move backward then punch with hood
-  chassis.moveToPoint(-39, ylocation, 1000, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100}, true);
-
-  /*
-    // use wing
-    chassis.turnToPoint(-26.5, -58, 500, {.forwards = false, .maxSpeed = 70}, false);
-    chassis.moveToPoint(-26.53, -58, 2000, {.forwards = true, .maxSpeed = 70}, false);
-    chassis.turnToPoint(-10.2, -58, 500, {.forwards = true, .maxSpeed = 60}, false);
-    chassis.moveToPoint(-10.2, -58, 2000, {.forwards = true, .maxSpeed = 60}, false);
-  */
-
+  // wing
+  chassis.moveToPoint(-39, -47, 1000, {.maxSpeed = 70}, false);
+  chassis.turnToPoint(-32, -56.75, 600, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-32, -56.75, 1500, {.forwards = false, .maxSpeed = 70}, false);
+  chassis.turnToPoint(-7, -56.75, 600, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-7, -56.75, 3000, {.forwards = false, .maxSpeed = 80}, false);
+  
 }
 
 // LEFT SIDE -- THIS WORKS
@@ -332,7 +322,7 @@ void autonomousSoloAWP(){
 
   // back out
   chassis.moveToPoint(-36, -47, 400, {.forwards=true, .maxSpeed = 90}, false);
-  
+
   // go to mid 3 balls
   bottomIntake.move(127);
   chassis.turnToPoint(-22.5, -22.5, 400, {.forwards=true, .maxSpeed=100}, false);
@@ -355,7 +345,7 @@ void autonomousSoloAWP(){
   conveyorPiston.set_value(true);
   // bottomIntake.move(-127);
   // pros::delay(50);
-  // bottomIntake.move(0);
+  // bottomIntake.moxve(0);
   fullIntake.move(127);
   pros::delay(500);
   conveyorPiston.set_value(false);
@@ -363,7 +353,6 @@ void autonomousSoloAWP(){
 
   // go to left match loader align midpoint
   chassis.moveToPoint(-46, 47, 1400, {.forwards=true, .maxSpeed = 90}, false);
-  
   
   // drop tongue & start intake
   bottomIntake.move(127);
