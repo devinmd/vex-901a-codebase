@@ -305,24 +305,25 @@ void autonomousLeft() {
 }
 
 void autonomousSoloAWP(){
+
   chassis.setPose(-47, 0, 180);
   tonguePiston.set_value(true); // lifts tongue
   conveyorPiston.set_value(false); // raise conveyor
 
   // push teammate off park zone barrier
-  chassis.moveToPoint(-47, 4, 1000, {.forwards=false, .maxSpeed=40}, false);
+  chassis.moveToPoint(-47, 6, 1000, {.forwards=false, .maxSpeed=60}, false);
   // drive to align with matchloader (midpoint)
   chassis.moveToPoint(-47, -47, 2000, {.maxSpeed = 90}, false);
 
   // move into match loader & drop tongue & run intake
-  chassis.turnToPoint(-62, -47, 500, {.forwards=true, .maxSpeed = 80}, false);
+  chassis.turnToPoint(-62, -47, 500, {.forwards=true, .maxSpeed = 100}, false);
   tonguePiston.set_value(false);
   bottomIntake.move(127);
   pros::delay(200);
   chassis.moveToPoint(-62, -47, 1100, {.forwards=true, .maxSpeed = 70}, false);
 
   // move into long goal
-  chassis.moveToPoint(-24, -47, 2000, {.forwards = false, .maxSpeed = 75}, true);
+  chassis.moveToPoint(-24, -47, 2000, {.forwards = false, .maxSpeed = 90}, true);
   pros::delay(1000); // allow time to drive into goal
   fullIntake.move(127); // start scoring
   pros::delay(800); // time to score
@@ -330,24 +331,24 @@ void autonomousSoloAWP(){
   tonguePiston.set_value(true); // raise tongue
 
   // back out
-  chassis.moveToPoint(-36, -47, 500, {.forwards=true, .maxSpeed = 90}, false);
+  chassis.moveToPoint(-36, -47, 400, {.forwards=true, .maxSpeed = 90}, false);
   
   // go to mid 3 balls
   bottomIntake.move(127);
-  chassis.turnToPoint(-22.5, -22.5, 400, {.forwards=true, .maxSpeed=80}, false);
-  chassis.moveToPoint(-22.5, -22.5, 1100, {.forwards=true, .maxSpeed=100}, true);
-  pros::delay(200);
+  chassis.turnToPoint(-22.5, -22.5, 400, {.forwards=true, .maxSpeed=100}, false);
+  chassis.moveToPoint(-22.5, -22.5, 1000, {.forwards=true, .maxSpeed=100}, true);
+  pros::delay(100);
   tonguePiston.set_value(false); // drop tongue to grab last ball
 
   // go to left side mid 3 balls (longer traverse)
-  chassis.turnToPoint(-22.5, 22.5, 300, {.forwards=true, .maxSpeed=80}, false);
+  chassis.turnToPoint(-22.5, 22.5, 300, {.forwards=true, .maxSpeed=100}, false);
   tonguePiston.set_value(true); // raise tongue 
   chassis.moveToPoint(-22.5, 22.5, 1600, {.maxSpeed = 100}, true);
   pros::delay(850); // wait until at the balls
   tonguePiston.set_value(false); // drop tongue to grab last ball
   
   // go to mid goal
-  chassis.turnToPoint(-7, 7, 400, {.forwards=false, .maxSpeed=80}, false);
+  chassis.turnToPoint(-7, 7, 400, {.forwards=false, .maxSpeed=100}, false);
   chassis.moveToPoint(-7, 7, 700, {.forwards=false, .maxSpeed=70}, false);
 
   // score mid goal
@@ -368,11 +369,11 @@ void autonomousSoloAWP(){
   bottomIntake.move(127);
   
   // go into left match loader
-  chassis.turnToPoint(-57, 47, 400, {.forwards=true, .maxSpeed=80}, false);
+  chassis.turnToPoint(-57, 47, 400, {.forwards=true, .maxSpeed=100}, false);
   chassis.moveToPoint(-57, 47, 1100, {.forwards=true, .maxSpeed=80}, false);
 
   // score left long goal
-  chassis.moveToPoint(-24, 47, 3500, {.forwards=false, .maxSpeed=70}, true);
+  chassis.moveToPoint(-24, 47, 3500, {.forwards=false, .maxSpeed=80}, true);
   pros::delay(1200);
   bottomIntake.move(0);
   fullIntake.move(127);
