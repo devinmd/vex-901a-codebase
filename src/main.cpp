@@ -16,10 +16,10 @@
 // select autonomous here
 
 void autonomous() {
-  autonomousSoloAWP();
+  // autonomousSoloAWP();
   // autonomousRight();
   // autonomousLeft();
-  // autonomousSkills();
+  autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();

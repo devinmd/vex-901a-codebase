@@ -2,6 +2,7 @@
 
 #include "autonomous.h"
 #include "motors.h"
+#include "pros/rtos.hpp"
 
 /*
 forward is the tongue side
@@ -198,7 +199,9 @@ void autonomousRight() {
 
   // collect 3 middle balls (storage)
   bottomIntake.move(127);
-  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 50}, false);
+  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 60}, true);
+  pros::delay(850);
+  tonguePiston.set_value(false); // drop tongue to catch last ball
   bottomIntake.move(0);
 
   // move to goal & align, then run intake & score
