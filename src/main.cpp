@@ -18,8 +18,8 @@
 void autonomous() {
   // autonomousSoloAWP();
   // autonomousRight();
-  // autonomousLeft();
-  autonomousSkills();
+  autonomousLeft();
+  // autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();
