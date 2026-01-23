@@ -103,7 +103,7 @@ forward is the tongue side
 
 void opcontrol() {
 
-  int direction = -1;
+  int direction = 1;
   bool lastX = false;
   bool xPressed = false;
   bool tonguePistonState = false;
