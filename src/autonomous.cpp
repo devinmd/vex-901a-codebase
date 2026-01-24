@@ -224,57 +224,49 @@ void autonomousLeft() {
   // run intake
   bottomIntake.move(127);
   // move to 3 middle balls
-  chassis.moveToPoint(-23.5, 21.6, 2000, {.maxSpeed = 60}, true);
-  pros::delay(1000);
-  // drop tongue (catch the last ball)
+  chassis.moveToPoint(-22.5, 22.5, 1800, {.maxSpeed = 90}, true);
+  pros::delay(400);
+  // drop tongue (catch last ball)
   tonguePiston.set_value(false);
-  pros::delay(1000);
 
-  // go to mid-top goal
-  // turn to middle goal
-  chassis.turnToPoint(-6.6, 8.3, 500, { .forwards = false, .maxSpeed = 60, }, false);
-  // move to middle goal
-  chassis.moveToPoint(-6.6, 8.3, 1000, { .forwards = false, .maxSpeed = 60, }, false);
-
-  // drop conveyor -- DROP HERE????? -- TEST THIS
+ 
+  // turn to middle goal, move to it, & score
+  chassis.turnToPoint(-6, 6, 500, { .forwards = false, .maxSpeed = 80, }, false);
+  bottomIntake.move(0);
+  chassis.moveToPoint(-6, 6, 1000, { .forwards = false, .maxSpeed = 70, }, false);
   conveyorPiston.set_value(true);
-  // run intake to score balls to middle goal
+  bottomIntake.move(-127);
+  pros::delay(150);
+  bottomIntake.move(0);
   fullIntake.move(127);
-  pros::delay(2000);
-
-  // raise conveyor
-  conveyorPiston.set_value(false);
-  // stop intake
+  pros::delay(1900);
   fullIntake.move(0);
 
-  const int ylocation = 48;
+  conveyorPiston.set_value(false); // raise
 
-  // move to mid position
-  chassis.turnToPoint(-42, ylocation, 500, {.maxSpeed = 100}, false);
-  chassis.moveToPoint(-42, ylocation, 2000, {.maxSpeed = 70}, false); // 60 speed works
-  chassis.turnToPoint(-60, ylocation, 300, {.maxSpeed = 40}, false);
+  // move to goal & align, then run intake & score
+  chassis.moveToPoint(-47, 47, 1800, {.maxSpeed = 90}, false);
+  chassis.turnToPoint(-58, 47, 500, {.maxSpeed = 80}, false);
 
-  // drop tongue
-  tonguePiston.set_value(false);
-  // run in take
+  // move to loader, intake
   bottomIntake.move(127);
-  // give time for tongue to drop
-  pros::delay(200);
-  // move into the match load and get balls
-  chassis.moveToPoint(-62, ylocation, 2000, {.forwards = true, .maxSpeed = 60}, false);
+  pros::delay(300);
+  chassis.moveToPoint(-58, 47, 1200, {.maxSpeed = 85}, false);
 
-  // move to long goal
-  chassis.moveToPoint(-22, ylocation, 3000, {.forwards = false, .maxSpeed = 70}, true);
-  // wait until bot gets to long goal
-  pros::delay(1000);
-  // score long goal
+  // move to long goal & score
+  chassis.moveToPoint(-24, 47, 3000, {.forwards = false, .maxSpeed = 80}, true);
+  pros::delay(1500);
+  bottomIntake.move(0);
   fullIntake.move(127);
-  pros::delay(2000);
+  pros::delay(1500);
   fullIntake.move(0);
 
-  // move back then come back and punch
-  chassis.moveToPoint(-39, ylocation, 500, {.maxSpeed = 60}, false);
-  chassis.moveToPoint(-22, ylocation, 500, {.forwards = false, .maxSpeed = 100}, true);
+  // wing
+  chassis.moveToPoint(-39, 47, 600, {.maxSpeed = 70}, false);
+  chassis.turnToPoint(-32, 36.75, 200, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-32, 36.75, 800, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.turnToPoint(-7, 36.75, 200, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-7, 36.75, 3000, {.forwards = false, .maxSpeed = 70}, false);
 }
 
 
