@@ -20,24 +20,6 @@ figure out good timeout for turns
 
 */
 
-void testSpeed(){
-
-  //
-  const int moveSpeed = 127;
-  const int rotateSpeed = 127;
-
-  chassis.setPose(0, 0, 0);
-  chassis.moveToPoint(0, 48, 2000, {.forwards = true, .maxSpeed=moveSpeed});
-  
-  pros::delay(1000);
-  
-  chassis.setPose(0, 0, 0);
-  chassis.turnToHeading(90, 500, {.maxSpeed=rotateSpeed});
-
-  chassis.setPose(0, 0, 0);
-  chassis.turnToHeading(90, 500, {.maxSpeed=rotateSpeed});
-}
-
 void tuneLateralPID() {
   chassis.setPose(0, 0, 0);
   chassis.moveToPoint(0, 48, 10000, {.forwards = true});
@@ -199,21 +181,19 @@ void autonomousRight() {
 
   // collect 3 middle balls (storage)
   bottomIntake.move(127);
-  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 60}, true);
-  pros::delay(850);
+  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 90}, false);
+  pros::delay(400);
   tonguePiston.set_value(false); // drop tongue to catch last ball
-  bottomIntake.move(0);
 
   // move to goal & align, then run intake & score
   chassis.turnToPoint(-47, -47, 500, {.maxSpeed=80}, false);
   chassis.moveToPoint(-47, -47, 1600, {.maxSpeed=90}, false);
   chassis.turnToPoint(-58, -47, 800, {.maxSpeed=80}, false);
 
-  // drop tongue, move to loader, intake
+  // move to loader, intake
   bottomIntake.move(127);
-  tonguePiston.set_value(false);
   pros::delay(400);
-  chassis.moveToPoint(-58, -47, 1500, {.maxSpeed = 75}, false);
+  chassis.moveToPoint(-58, -47, 1500, {.maxSpeed = 80}, false);
 
   // move to long goal & score
   chassis.moveToPoint(-24, -47, 4000, {.forwards = false, .maxSpeed = 80}, true);
@@ -224,11 +204,11 @@ void autonomousRight() {
   fullIntake.move(0);
 
   // wing
-  chassis.moveToPoint(-39, -47, 1000, {.maxSpeed = 70}, false);
-  chassis.turnToPoint(-32, -56.75, 600, {.forwards = false, .maxSpeed = 80}, false);
-  chassis.moveToPoint(-32, -56.75, 1500, {.forwards = false, .maxSpeed = 70}, false);
-  chassis.turnToPoint(-7, -56.75, 600, {.forwards = false, .maxSpeed = 80}, false);
-  chassis.moveToPoint(-7, -56.75, 3000, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-39, -47, 600, {.maxSpeed = 80}, false);
+  chassis.turnToPoint(-32, -56.75, 300, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-32, -56.75, 800, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.turnToPoint(-7, -56.75, 300, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-7, -56.75, 3000, {.forwards = false, .maxSpeed = 70}, false);
   
 }
 
