@@ -18,8 +18,8 @@
 void autonomous() {
   // autonomousSoloAWP();
   // autonomousRight();
-  autonomousLeft();
-  // autonomousSkills();
+  // autonomousLeft();
+  autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();
@@ -35,8 +35,8 @@ void initialize() {
   pros::lcd::initialize();
   chassis.calibrate();
 
-  tonguePiston.set_value(true);    // lifts tongue
-  conveyorPiston.set_value(false); // raise conveyor
+  // tonguePiston.set_value(true);    // lifts tongue
+  // conveyorPiston.set_value(false); // raise conveyor
 
   pros::delay(500);
 
