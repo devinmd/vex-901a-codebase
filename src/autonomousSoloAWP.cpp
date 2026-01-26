@@ -6,13 +6,15 @@
 void autonomousSoloAWP() {
 
   // set starting position for middle
-  chassis.setPose(-47, 0, 180);
+  chassis.setPose(-47, 0, 0);
+  bottomIntake.move(127); // run intake to grab teammates preload
   tonguePiston.set_value(true); // lifts tongue
 
   // push teammate off park zone barrier
+  chassis.moveToPoint(-47, 8, 500, {.forwards=true, .maxSpeed = 90}, false);
 
   // move to tube
-  chassis.moveToPoint(-47, -47, 1200, {.maxSpeed = 90}, false);
+  chassis.moveToPoint(-47, -47, 1200, {.forwards=false, .maxSpeed = 90}, false);
   chassis.turnToPoint(-57, -47, 350, {.maxSpeed = 80}, false);
   tonguePiston.set_value(false);
   pros::delay(300);
