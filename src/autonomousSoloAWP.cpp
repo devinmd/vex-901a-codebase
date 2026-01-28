@@ -13,30 +13,32 @@ void autonomousSoloAWP() {
   // push teammate off park zone barrier
   chassis.moveToPoint(-47, 8, 500, {.forwards=true, .maxSpeed = 90}, false);
 
-  // move to tube
-  chassis.moveToPoint(-47, -47, 1200, {.forwards=false, .maxSpeed = 90}, false);
-  chassis.turnToPoint(-57, -47, 350, {.maxSpeed = 80}, false);
+  // move to match loader 
+  chassis.moveToPoint(-47, -47, 1700, {.forwards=false, .maxSpeed = 100}, false);
+  chassis.turnToPoint(-57, -47, 500, {.maxSpeed = 110}, false); 
   tonguePiston.set_value(false);
-  pros::delay(300);
+  pros::delay(200); 
   bottomIntake.move(127);
-  chassis.moveToPoint(-57, -47, 800, {.maxSpeed = 80}, false);
+  chassis.moveToPoint(-62, -47, 1100, {.maxSpeed = 90}, false); 
 
   // move to long goal and score
-  chassis.moveToPoint(-24, -47, 2000, {.forwards = false, .maxSpeed = 90}, true);
-  pros::delay(850);
+  chassis.moveToPoint(-24, -47, 2400, {.forwards = false, .maxSpeed = 110}, true); 
+  pros::delay(850); // 850ms works
   bottomIntake.move(0);
   fullIntake.move(127);
   pros::delay(1000);
   fullIntake.move(0);
   tonguePiston.set_value(true);
 
-  // move back and get 6 balls
-  chassis.moveToPoint(-36, -47, 500, { .maxSpeed = 90}, true);
-  chassis.turnToPoint(-22.5, -22.5, 400, {.maxSpeed = 80}, false);
+  // move back
+  chassis.moveToPoint(-36, -47, 500, { .maxSpeed = 127}, true); 
+  // go for 3 balls
+  chassis.turnToPoint(-22.5, -22.5, 600, {.maxSpeed = 100}, false); 
   bottomIntake.move(127);
-  chassis.moveToPoint(-22.5, -22.5, 900, {.maxSpeed = 100}, true);
+  chassis.moveToPoint(-22.5, -22.5, 800, {.maxSpeed = 100}, true); 
   pros::delay(400);
   tonguePiston.set_value(false);
+  // go for other 3 balls
   chassis.turnToPoint(-22.5, 22.5, 300, {.maxSpeed = 80}, false);
   tonguePiston.set_value(true);
   chassis.moveToPoint(-22.5, 22.5, 1600, {.maxSpeed = 100}, true);
@@ -52,15 +54,15 @@ void autonomousSoloAWP() {
   conveyorPiston.set_value(true);
   bottomIntake.move(0);
   fullIntake.move(127);
-  pros::delay(800);
+  pros::delay(1200);
   fullIntake.move(0);
 
   // move to other tube
   conveyorPiston.set_value(false);
-  chassis.moveToPoint(-47, 47, 1400, {.maxSpeed = 90}, false);
+  chassis.moveToPoint(-47, 47, 1400, {.maxSpeed = 110}, false); 
   chassis.turnToPoint(-57, 47, 400, {.maxSpeed = 80}, false);
   bottomIntake.move(127);
-  chassis.moveToPoint(-57, 47, 800, {.maxSpeed = 80}, false);
+  chassis.moveToPoint(-62, 47, 1100, {.maxSpeed = 80}, false); 
 
   // move to long goal and score
   chassis.moveToPoint(-23, 47, 3500, {.forwards = false, .maxSpeed = 90}, true);

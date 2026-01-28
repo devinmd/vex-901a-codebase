@@ -18,8 +18,8 @@
 void autonomous() {
   // autonomousSoloAWP();
   // autonomousRight();
-  // autonomousLeft();
-  autonomousSkills();
+  autonomousLeft();
+  // autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();
@@ -115,7 +115,7 @@ void opcontrol() {
     // curvature drive
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-    chassis.curvature(leftY * direction, rightX);
+    chassis.curvature(leftY * direction, 0.95 * rightX);
 
     // intake motors
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
@@ -133,6 +133,40 @@ void opcontrol() {
       // none
       topIntake.move(0);
       bottomIntake.move(0);
+    }
+
+    // wing macro
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+      chassis.setPose(-28, 47, 270);
+
+      const int yCoord = 35;
+
+      chassis.moveToPoint(-39, 47, 400, {.maxSpeed = 70}, false);
+      chassis.turnToPoint(-32, 35, 200, {.forwards = false, .maxSpeed = 80},
+                          false);
+      chassis.moveToPoint(-32, 38, 500, {.forwards = false, .maxSpeed = 80},
+                          false);
+      chassis.turnToPoint(-7, 38, 200, {.forwards = false, .maxSpeed = 80},
+                          false);
+      chassis.moveToPoint(-2, 38, 800, {.forwards = false, .maxSpeed = 127},
+                          false);
+    }
+
+    // driver skills auton start macro
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
+      chassis.setPose(-47, 15, 0);
+      tonguePiston.set_value(false); // drop tongue
+
+      // move to match loader
+      chassis.moveToPoint(-47, 47, 1700, {.forwards = false, .maxSpeed = 100},
+                          false); // 90 speed works
+      chassis.turnToPoint(-57, 47, 500, {.maxSpeed = 110},
+                          false); // 80 speed works
+      // tonguePiston.set_value(false);
+      // pros::delay(200); // 300ms works
+      bottomIntake.move(127);
+      chassis.moveToPoint(-62, 47, 1100, {.maxSpeed = 90},
+                          false); // 80 speed works, 800ms works
     }
 
     // middle goal

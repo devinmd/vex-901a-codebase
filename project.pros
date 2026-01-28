@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "901a code",
+    "project_name": "901a-left",
     "target": "v5",
     "templates": {
       "LemLib": {
@@ -636,7 +636,8 @@
     },
     "upload_options": {
       "icon": "alien",
-      "description": "901a code"
+      "description": "901a right",
+      "slot": 3
     },
     "use_early_access": false
   }
