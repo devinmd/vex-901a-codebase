@@ -8,7 +8,9 @@
 void autonomousSkills();
 void autonomousSkillsPark();
 void autonomousRight(); // Right side
-void autonomousLeft(); // Left side
+void autonomousLeft(); // Left side -- mid, match load, long goal, wing
+void autonomousLeft2(); // Left side -- match load, long goal, wing, mid
+void autonomousLeft3(); // Left side -- match load, long goal, mid, wing
 void tuneAngularPID();
 void tuneLateralPID();
 void autonomousSoloAWP();

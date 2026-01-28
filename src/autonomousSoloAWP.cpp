@@ -11,29 +11,29 @@ void autonomousSoloAWP() {
   tonguePiston.set_value(true); // lifts tongue
 
   // push teammate off park zone barrier
-  chassis.moveToPoint(-47, 8, 500, {.forwards=true, .maxSpeed = 90}, false);
+  chassis.moveToPoint(-47, 8, 530, {.forwards=true, .maxSpeed = 90}, false);
 
   // move to match loader 
   chassis.moveToPoint(-47, -47, 1700, {.forwards=false, .maxSpeed = 100}, false);
   chassis.turnToPoint(-57, -47, 500, {.maxSpeed = 110}, false); 
   tonguePiston.set_value(false);
-  pros::delay(200); 
+  pros::delay(100);  // 200ms works
   bottomIntake.move(127);
   chassis.moveToPoint(-62, -47, 1100, {.maxSpeed = 90}, false); 
 
   // move to long goal and score
   chassis.moveToPoint(-24, -47, 2400, {.forwards = false, .maxSpeed = 110}, true); 
-  pros::delay(850); // 850ms works
+  pros::delay(700); 
   bottomIntake.move(0);
   fullIntake.move(127);
-  pros::delay(1000);
+  pros::delay(1100);
   fullIntake.move(0);
   tonguePiston.set_value(true);
 
   // move back
   chassis.moveToPoint(-36, -47, 500, { .maxSpeed = 127}, true); 
   // go for 3 balls
-  chassis.turnToPoint(-22.5, -22.5, 600, {.maxSpeed = 100}, false); 
+  chassis.turnToPoint(-22.5, -22.5, 500, {.maxSpeed = 100}, false); 
   bottomIntake.move(127);
   chassis.moveToPoint(-22.5, -22.5, 800, {.maxSpeed = 100}, true); 
   pros::delay(400);

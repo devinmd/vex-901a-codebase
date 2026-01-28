@@ -8,7 +8,7 @@
 
 void autonomousRight() {
   // set starting position on right side
-  chassis.setPose(-48.36, -16.2, 103.692);
+  chassis.setPose(-48.9, -17, 102);
   tonguePiston.set_value(true);    // lifts tongue
   conveyorPiston.set_value(false); // raise conveyor
 

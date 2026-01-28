@@ -18,7 +18,9 @@
 void autonomous() {
   // autonomousSoloAWP();
   // autonomousRight();
-  autonomousLeft();
+  // autonomousLeft();
+  autonomousLeft2();
+  autonomousLeft3();
   // autonomousSkills();
   // autonomousSkillsPark()
   // tuneAngularPID();
@@ -123,8 +125,15 @@ void opcontrol() {
       bottomIntake.move(127);
     } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
       // both
-      topIntake.move(127);
-      bottomIntake.move(127);
+      if (conveyorPistonState) {
+        topIntake.move(127);
+        bottomIntake.move(127);
+      } else {
+        // slow it down when scoring on middle goal
+        topIntake.move(80);
+        bottomIntake.move(80);
+      }
+
     } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_R2))) {
       // reverse
       topIntake.move(-127);
@@ -152,9 +161,50 @@ void opcontrol() {
                           false);
     }
 
-    // driver skills auton start macro
+    // motor test and LOCK
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-      chassis.setPose(-47, 15, 0);
+
+      const bool test_motor = false;
+
+      if (test_motor) {
+        const int delay = 2000;
+
+        pros::c::motor_move(3, 127); // good
+        pros::delay(delay);
+        pros::c::motor_move(3, 0);
+        pros::delay(delay);
+
+        pros::c::motor_move(2, 127); // good
+        pros::delay(delay);
+        pros::c::motor_move(2, 0);
+        pros::delay(delay);
+
+        pros::c::motor_move(1, 127); // slow
+        pros::delay(delay);
+        pros::c::motor_move(1, 0);
+        pros::delay(delay);
+
+        pros::c::motor_move(15, 127); // slow
+        pros::delay(delay);
+        pros::c::motor_move(15, 0);
+        pros::delay(delay);
+
+        pros::c::motor_move(14, 127); // popped out
+        pros::delay(delay);
+        pros::c::motor_move(14, 0);
+        pros::delay(delay);
+
+        pros::c::motor_move(13, 127); // good
+        pros::delay(delay);
+        pros::c::motor_move(13, 0);
+      } else {
+        // LOCK (need to test this)
+        chassis.setPose(0, 0, 0);
+        chassis.moveToPose(0, 0, 0, 10000, {}, true);
+        // is there a way to exit macros?
+      }
+
+      /*chassis.setPose(-47, 15, 0);
       tonguePiston.set_value(false); // drop tongue
 
       // move to match loader
@@ -166,22 +216,22 @@ void opcontrol() {
       // pros::delay(200); // 300ms works
       bottomIntake.move(127);
       chassis.moveToPoint(-62, 47, 1100, {.maxSpeed = 90},
-                          false); // 80 speed works, 800ms works
+                          false); // 80 speed works, 800ms works*/
     }
 
-    // middle goal
+    // middle goal piston
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
       conveyorPistonState = !conveyorPistonState;
       conveyorPiston.set_value(conveyorPistonState);
     }
 
-    // tongue
+    // tongue piston
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
       tonguePistonState = !tonguePistonState;
       tonguePiston.set_value(tonguePistonState);
     }
 
-    // wing
+    // wing piston
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
       wingPistonState = !wingPistonState;
       wingPiston.set_value(wingPistonState);
