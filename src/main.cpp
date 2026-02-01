@@ -11,17 +11,51 @@
 
 //
 #include "autonomous.h"
+#include "helpers.h"
 #include "motors.h"
 
-// select autonomous here
+//
+// constantly checks if motors are jammed in intake
+void intake_motor_monitor_task(void *param) {
 
+  int jam_timer = 0;           // Tracks how long we've been "jammed"
+  const int JAM_THRESHOLD = 5; // 15 loops * 20ms = 300ms of sustained jamming
+
+  int bottomTargetVelocity = bottomIntake.get_target_velocity();
+  int topTargetVelocity = topIntake.get_target_velocity();
+
+  while (true) {
+    if (isMotorJammed(bottomIntake))
+      jam_timer++;
+    else
+      jam_timer = 0;
+
+    if (jam_timer >= JAM_THRESHOLD) {
+      bottomIntake.move(-127);
+      topIntake.move(-127);
+      pros::delay(50);
+
+      // then revert motor back to its original power
+      bottomIntake.move_velocity(bottomTargetVelocity);
+      topIntake.move_velocity(topTargetVelocity);
+
+      jam_timer = 0;
+    }
+    // let other tasks run
+    pros::delay(20);
+  }
+}
+
+// select autonomous here
 void autonomous() {
+
   // autonomousSoloAWP();
   // autonomousRight();
-  // autonomousLeft();
-  autonomousLeft2();
-  autonomousLeft3();
+  autonomousLeft();
+  // autonomousLeft2();
+  // autonomousLeft3();
   // autonomousSkills();
+  // autonomousLeftRush();
   // autonomousSkillsPark()
   // tuneAngularPID();
   // tuneLateralPID();
@@ -37,10 +71,10 @@ void initialize() {
   pros::lcd::initialize();
   chassis.calibrate();
 
+  // pros::Task intake_motor_watcher(intake_motor_monitor_task);
+
   // tonguePiston.set_value(true);    // lifts tongue
   // conveyorPiston.set_value(false); // raise conveyor
-
-  pros::delay(500);
 
   /*
   pros::Task screenTask([&]() {
@@ -118,24 +152,29 @@ void opcontrol() {
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
     chassis.curvature(leftY * direction, 0.95 * rightX);
-
-    // intake motors
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
-      // storage
+      // storage motor
+      if (!isMotorJammed(bottomIntake)) {
+      topIntake.move(0);
       bottomIntake.move(127);
+      }
     } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
-      // both
+      // both motors
       if (conveyorPistonState) {
-        topIntake.move(127);
-        bottomIntake.move(127);
-      } else {
         // slow it down when scoring on middle goal
+        if (!isMotorJammed(bottomIntake)) {
         topIntake.move(80);
         bottomIntake.move(80);
+        }
+      } else {
+        // full speed
+        if (!isMotorJammed(bottomIntake)) {
+        topIntake.move(127);
+        bottomIntake.move(127);
+        }
       }
-
     } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_R2))) {
-      // reverse
+      // reverse intake
       topIntake.move(-127);
       bottomIntake.move(-127);
     } else {
@@ -146,63 +185,14 @@ void opcontrol() {
 
     // wing macro
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-      chassis.setPose(-28, 47, 270);
-
-      const int yCoord = 35;
-
-      chassis.moveToPoint(-39, 47, 400, {.maxSpeed = 70}, false);
-      chassis.turnToPoint(-32, 35, 200, {.forwards = false, .maxSpeed = 80},
-                          false);
-      chassis.moveToPoint(-32, 38, 500, {.forwards = false, .maxSpeed = 80},
-                          false);
-      chassis.turnToPoint(-7, 38, 200, {.forwards = false, .maxSpeed = 80},
-                          false);
-      chassis.moveToPoint(-2, 38, 800, {.forwards = false, .maxSpeed = 127},
-                          false);
+      wingMacro();
     }
 
     // motor test and LOCK
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
 
-      const bool test_motor = false;
-
-      if (test_motor) {
-        const int delay = 2000;
-
-        pros::c::motor_move(3, 127); // good
-        pros::delay(delay);
-        pros::c::motor_move(3, 0);
-        pros::delay(delay);
-
-        pros::c::motor_move(2, 127); // good
-        pros::delay(delay);
-        pros::c::motor_move(2, 0);
-        pros::delay(delay);
-
-        pros::c::motor_move(1, 127); // slow
-        pros::delay(delay);
-        pros::c::motor_move(1, 0);
-        pros::delay(delay);
-
-        pros::c::motor_move(15, 127); // slow
-        pros::delay(delay);
-        pros::c::motor_move(15, 0);
-        pros::delay(delay);
-
-        pros::c::motor_move(14, 127); // popped out
-        pros::delay(delay);
-        pros::c::motor_move(14, 0);
-        pros::delay(delay);
-
-        pros::c::motor_move(13, 127); // good
-        pros::delay(delay);
-        pros::c::motor_move(13, 0);
-      } else {
-        // LOCK (need to test this)
-        chassis.setPose(0, 0, 0);
-        chassis.moveToPose(0, 0, 0, 10000, {}, true);
-        // is there a way to exit macros?
-      }
+      testMotors();
+      // lockMacro();
 
       /*chassis.setPose(-47, 15, 0);
       tonguePiston.set_value(false); // drop tongue
@@ -244,6 +234,6 @@ void opcontrol() {
     }
     lastX = xPressed;
 
-    pros::delay(25);
+    pros::delay(20);
   }
 }

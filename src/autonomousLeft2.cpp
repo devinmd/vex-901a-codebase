@@ -4,7 +4,7 @@
 #include "pros/rtos.hpp"
 
 
-void autonomousLeft() {
+void autonomousLeft2() {
 
   // set starting position on left side
   chassis.setPose(-48.9,17, 0);
@@ -54,7 +54,7 @@ void autonomousLeft() {
   pros::delay(150);
   bottomIntake.move(0);
   fullIntake.move(100);  // run a little slower
-  pros::delay(1900);
+  pros::delay(2200);
   fullIntake.move(0);
 
   conveyorPiston.set_value(false); // raise

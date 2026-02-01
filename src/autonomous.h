@@ -14,5 +14,6 @@ void autonomousLeft3(); // Left side -- match load, long goal, mid, wing
 void tuneAngularPID();
 void tuneLateralPID();
 void autonomousSoloAWP();
+void autonomousLeftRush();
 
 #endif // AUTONOMOUS_H

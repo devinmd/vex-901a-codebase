@@ -31,7 +31,7 @@ void autonomousSoloAWP() {
   tonguePiston.set_value(true);
 
   // move back
-  chassis.moveToPoint(-36, -47, 500, { .maxSpeed = 127}, true); 
+  chassis.moveToPoint(-42, -47, 500, { .maxSpeed = 127}, true); 
   // go for 3 balls
   chassis.turnToPoint(-22.5, -22.5, 500, {.maxSpeed = 100}, false); 
   bottomIntake.move(127);

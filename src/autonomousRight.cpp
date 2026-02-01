@@ -14,33 +14,39 @@ void autonomousRight() {
 
   // collect 3 middle balls (storage)
   bottomIntake.move(127);
-  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 90}, false);
+  chassis.moveToPoint(-22.5, -22.5, 2000, {.maxSpeed = 90}, true);
   pros::delay(400);
   tonguePiston.set_value(false); // drop tongue to catch last ball
 
+  const int yloc = -48;
+
   // move to goal & align, then run intake & score
-  chassis.turnToPoint(-47, -47, 500, {.maxSpeed=80}, false);
-  chassis.moveToPoint(-47, -47, 1600, {.maxSpeed=90}, false);
-  chassis.turnToPoint(-58, -47, 800, {.maxSpeed=80}, false);
+  chassis.turnToPoint(-47, yloc, 500, {.maxSpeed=80}, false);
+  chassis.moveToPoint(-47, yloc, 1600, {.maxSpeed=90}, false);
+  chassis.turnToPoint(-58, yloc, 800, {.maxSpeed=80}, false);
 
   // move to loader, intake
   bottomIntake.move(127);
-  pros::delay(400);
-  chassis.moveToPoint(-58, -47, 1500, {.maxSpeed = 80}, false);
+  pros::delay(300);
+  chassis.moveToPoint(-58, yloc, 1300, {.maxSpeed = 80}, false);
 
   // move to long goal & score
-  chassis.moveToPoint(-24, -47, 4000, {.forwards = false, .maxSpeed = 80}, true);
-  pros::delay(1500);
-  bottomIntake.move(0);
+  chassis.moveToPoint(-24, yloc, 4000, {.forwards = false, .maxSpeed = 80}, true);
+  pros::delay(1500); // at long goal
+  
+  fullIntake.move(-127);
+  pros::delay(150); // at long goal run bcackward
+
   fullIntake.move(127);
-  pros::delay(2500);
+  pros::delay(2500); // intake for 2500
   fullIntake.move(0);
 
   // wing
-  chassis.moveToPoint(-39, -47, 600, {.maxSpeed = 80}, false);
-  chassis.turnToPoint(-32, -56.75, 300, {.forwards = false, .maxSpeed = 80}, false);
-  chassis.moveToPoint(-32, -56.75, 800, {.forwards = false, .maxSpeed = 80}, false);
-  chassis.turnToPoint(-7, -56.75, 300, {.forwards = false, .maxSpeed = 80}, false);
-  chassis.moveToPoint(-7, -56.75, 3000, {.forwards = false, .maxSpeed = 70}, false);
+  const int yloc2 = -59;
+  chassis.moveToPoint(-39, yloc, 600, {.maxSpeed = 80}, false);
+  chassis.turnToPoint(-32, yloc2, 300, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-32, yloc2, 800, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.turnToPoint(-7, yloc2, 300, {.forwards = false, .maxSpeed = 80}, false);
+  chassis.moveToPoint(-7, yloc2, 4000, {.forwards = false, .maxSpeed = 70}, false);
   
 }
