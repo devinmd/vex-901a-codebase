@@ -3,25 +3,18 @@
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-// Pistons
-pros::adi::DigitalOut tonguePiston('B', true);
-pros::adi::DigitalOut conveyorPiston('C', false);
-pros::adi::DigitalOut wingPiston('A', false);
-
 // Motor Groups
-pros::MotorGroup left_mg({15, -14, -13}, pros::MotorGearset::blue);
-pros::MotorGroup right_mg({3, -2, 1}, pros::MotorGearset::blue);
-pros::Motor bottomIntake(-12);
-pros::Motor topIntake(-11);
-pros::MotorGroup fullIntake({-12, -11});
+pros::MotorGroup left_mg({6,7}, pros::MotorGearset::blue);
+pros::MotorGroup right_mg({-4,-5}, pros::MotorGearset::blue);
+pros::MotorGroup fullIntake({-3,2});
 
 // Sensors
 pros::Imu imu(19);
 pros::Rotation vertical_rotation_sensor(-17);
 
 // Drivetrain settings
-lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 14.5,
-                              lemlib::Omniwheel::NEW_325, 450, 2);
+lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 12.5,
+                              lemlib::Omniwheel::NEW_325, 360, 2);
 
 // Tracking wheel
 lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor,

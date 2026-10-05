@@ -25,7 +25,7 @@ void intake_motor_monitor_task(void *param) {
   int topTargetVelocity = topIntake.get_target_velocity();
 
   while (true) {
-    if (isMotorJammed(bottomIntake))
+    if (isMotorJammed(conveyorMotor))
       jam_timer++;
     else
       jam_timer = 0;
@@ -142,89 +142,30 @@ void opcontrol() {
   int direction = 1;
   bool lastX = false;
   bool xPressed = false;
-  bool tonguePistonState = false;
-  bool conveyorPistonState = false;
-  bool wingPistonState = false;
 
   while (true) {
 
     // curvature drive
     int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
     int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+    
     chassis.curvature(leftY * direction, 0.95 * rightX);
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
-      // storage motor
-      if (!isMotorJammed(bottomIntake)) {
-      topIntake.move(0);
-      bottomIntake.move(127);
-      }
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
       // both motors
-      if (conveyorPistonState) {
-        // slow it down when scoring on middle goal
-        if (!isMotorJammed(bottomIntake)) {
-        topIntake.move(80);
-        bottomIntake.move(80);
-        }
-      } else {
-        // full speed
-        if (!isMotorJammed(bottomIntake)) {
-        topIntake.move(127);
-        bottomIntake.move(127);
-        }
-      }
-    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_R2))) {
+      fullIntake.move(127);
+    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L2))) {
       // reverse intake
-      topIntake.move(-127);
-      bottomIntake.move(-127);
+      fullIntake.move(-127);
     } else {
       // none
-      topIntake.move(0);
-      bottomIntake.move(0);
+      fullIntake.move(0);
     }
 
-    // wing macro
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-      wingMacro();
-    }
 
     // motor test and LOCK
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-
       testMotors();
-      // lockMacro();
-
-      /*chassis.setPose(-47, 15, 0);
-      tonguePiston.set_value(false); // drop tongue
-
-      // move to match loader
-      chassis.moveToPoint(-47, 47, 1700, {.forwards = false, .maxSpeed = 100},
-                          false); // 90 speed works
-      chassis.turnToPoint(-57, 47, 500, {.maxSpeed = 110},
-                          false); // 80 speed works
-      // tonguePiston.set_value(false);
-      // pros::delay(200); // 300ms works
-      bottomIntake.move(127);
-      chassis.moveToPoint(-62, 47, 1100, {.maxSpeed = 90},
-                          false); // 80 speed works, 800ms works*/
-    }
-
-    // middle goal piston
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
-      conveyorPistonState = !conveyorPistonState;
-      conveyorPiston.set_value(conveyorPistonState);
-    }
-
-    // tongue piston
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)) {
-      tonguePistonState = !tonguePistonState;
-      tonguePiston.set_value(tonguePistonState);
-    }
-
-    // wing piston
-    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)) {
-      wingPistonState = !wingPistonState;
-      wingPiston.set_value(wingPistonState);
     }
 
     // invert throttle button

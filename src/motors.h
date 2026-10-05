@@ -22,9 +22,10 @@ extern pros::adi::DigitalOut wingPiston;
 // Motor Groups
 extern pros::MotorGroup left_mg;
 extern pros::MotorGroup right_mg;
-extern pros::Motor bottomIntake;
+extern pros::MotorGroup bottomIntake;
 extern pros::Motor topIntake;
 extern pros::MotorGroup fullIntake;
+extern pros::Motor conveyorMotor;
 
 // Sensors
 extern pros::Imu imu;
