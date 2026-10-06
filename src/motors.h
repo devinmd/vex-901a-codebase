@@ -14,18 +14,13 @@
 // Controller
 extern pros::Controller controller;
 
-// Pistons
-extern pros::adi::DigitalOut tonguePiston;
-extern pros::adi::DigitalOut conveyorPiston;
-extern pros::adi::DigitalOut wingPiston;
-
 // Motor Groups
 extern pros::MotorGroup left_mg;
 extern pros::MotorGroup right_mg;
-extern pros::MotorGroup bottomIntake;
-extern pros::Motor topIntake;
-extern pros::MotorGroup fullIntake;
-extern pros::Motor conveyorMotor;
+extern pros::MotorGroup lift_motors;
+extern pros::Motor claw_motor;
+extern pros::Motor wrist_motor;
+
 
 // Sensors
 extern pros::Imu imu;

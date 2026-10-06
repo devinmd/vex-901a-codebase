@@ -4,12 +4,15 @@
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // Motor Groups
-pros::MotorGroup left_mg({6,7}, pros::MotorGearset::blue);
-pros::MotorGroup right_mg({-4,-5}, pros::MotorGearset::blue);
-pros::MotorGroup fullIntake({-3,2});
+pros::MotorGroup left_mg({-10,-3}, pros::MotorGearset::blue);
+pros::MotorGroup right_mg({1,2}, pros::MotorGearset::blue);
+pros::MotorGroup lift_motors({7,-4}, pros::MotorGearset::green);
+pros::Motor wrist_motor(9, pros::MotorGearset::rpm_200);
+pros::Motor claw_motor(8,pros::MotorGearset::rpm_200);
+
 
 // Sensors
-pros::Imu imu(19);
+pros::Imu imu(5);
 pros::Rotation vertical_rotation_sensor(-17);
 
 // Drivetrain settings

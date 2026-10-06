@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "901a LEFT",
+    "project_name": "901A Override",
     "target": "v5",
     "templates": {
       "LemLib": {
@@ -636,8 +636,8 @@
     },
     "upload_options": {
       "icon": "alien",
-      "description": "901a",
-      "slot": 2
+      "description": "901A Override",
+      "slot": 1
     },
     "use_early_access": false
   }

@@ -5,6 +5,7 @@
 #include "pros/adi.hpp"
 #include "pros/misc.h"
 #include "pros/motor_group.hpp"
+#include "pros/motors.h"
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
@@ -14,44 +15,12 @@
 #include "helpers.h"
 #include "motors.h"
 
-//
-// constantly checks if motors are jammed in intake
-void intake_motor_monitor_task(void *param) {
-
-  int jam_timer = 0;           // Tracks how long we've been "jammed"
-  const int JAM_THRESHOLD = 5; // 15 loops * 20ms = 300ms of sustained jamming
-
-  int bottomTargetVelocity = bottomIntake.get_target_velocity();
-  int topTargetVelocity = topIntake.get_target_velocity();
-
-  while (true) {
-    if (isMotorJammed(conveyorMotor))
-      jam_timer++;
-    else
-      jam_timer = 0;
-
-    if (jam_timer >= JAM_THRESHOLD) {
-      bottomIntake.move(-127);
-      topIntake.move(-127);
-      pros::delay(50);
-
-      // then revert motor back to its original power
-      bottomIntake.move_velocity(bottomTargetVelocity);
-      topIntake.move_velocity(topTargetVelocity);
-
-      jam_timer = 0;
-    }
-    // let other tasks run
-    pros::delay(20);
-  }
-}
-
 // select autonomous here
 void autonomous() {
 
   // autonomousSoloAWP();
   // autonomousRight();
-  autonomousLeft();
+  // autonomousLeft();
   // autonomousLeft2();
   // autonomousLeft3();
   // autonomousSkills();
@@ -137,43 +106,119 @@ forward is the tongue side
  * task, not resume it from where it left off.
  */
 
+const double TURN_MULTIPLIER = 0.95;
+const int BRAKE_DEADZONE = 10;
+const int DRIVETRAIN_MODE = 0;     // 0 = coast, 1 = brake, 2 = hold
+const double TIP_THRESHOLD = 12.0; // degrees of tilt before anti-tip engages
+const double ANTI_TIP_GAIN = 8.0;  // how aggressively it drives under itself
+
 void opcontrol() {
 
   int direction = 1;
-  bool lastX = false;
-  bool xPressed = false;
+  bool last_x = false;
+  bool x_pressed = false;
+  const int zero = lift_motors.set_zero_position_all(0.0);
+
+  lift_motors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
   while (true) {
 
-    // curvature drive
-    int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-    int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-    
-    chassis.curvature(leftY * direction, 0.95 * rightX);
+    // Read angle from IMU
+    double current_pitch = imu.get_pitch();
+    // double current_pitch = imu.get_roll();
 
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-      // both motors
-      fullIntake.move(127);
-    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L2))) {
-      // reverse intake
-      fullIntake.move(-127);
+    if (std::abs(current_pitch) > TIP_THRESHOLD) {
+      // Force motors to COAST/BRAKE so they react instantly without fighting a
+      // HOLD lock? Calculate corrective power proportional to how severe the
+      // tip is
+      int correction_power = current_pitch * ANTI_TIP_GAIN;
+
+      // Cap the power to V5 voltage limits (-127 to 127)
+      if (correction_power > 127)
+        correction_power = 127;
+      if (correction_power < -127)
+        correction_power = -127;
+
+      // Drive directly under the tilt direction
+      left_mg.move(correction_power);
+      right_mg.move(correction_power);
     } else {
-      // none
-      fullIntake.move(0);
+      // curvature drive
+      int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+      int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+
+      // when driving normally, joystick is moving
+      if (abs(leftY) > 10 || abs(rightX) > 10) {
+        if (DRIVETRAIN_MODE == 0) {
+          // turn on coasting
+          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+        } else {
+          // turn on braking
+          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+        }
+        chassis.curvature(leftY * direction, 0.95 * rightX);
+      }
+      // when joystick is idle
+      else {
+        if (DRIVETRAIN_MODE == 2) {
+          // hold
+          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+          left_mg.move_velocity(0);
+          right_mg.move_velocity(0);
+        } else if (DRIVETRAIN_MODE == 1) {
+          // brake
+          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+          left_mg.move_velocity(0);
+          right_mg.move_velocity(0);
+        } else {
+          // coast
+          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+          left_mg.move(0);
+          right_mg.move(0);
+        }
+      }
     }
 
+    //
+    // LIFT
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+      lift_motors.move(127);
+    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) && lift_motors.get_position() > 0) {
+      // stop lift from going below 0
+      lift_motors.move(-127);
+    } else {
+      lift_motors.move(0);
+    }
 
-    // motor test and LOCK
+    //
+    // CLAW & WRIST
+    const bool wristPressed =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    const bool clawOpenPressed =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
+    const bool clawClosedPressed =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
+
+    claw_motor.move(clawOpenPressed ? 127 : clawClosedPressed ? -127 : 0);
+    wrist_motor.move(wristPressed ? 63 : 0);
+
+    //
+    // DRIVETRAIN MOTOR TEST
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-      testMotors();
+      // testMotors();
     }
 
     // invert throttle button
-    xPressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
-    if (xPressed && !lastX) {
+    x_pressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
+    if (x_pressed && !last_x) {
       direction = -direction;
     }
-    lastX = xPressed;
+    last_x = x_pressed;
 
     pros::delay(20);
   }
