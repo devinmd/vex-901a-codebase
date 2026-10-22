@@ -65,14 +65,8 @@ void brain_ui_touch() {
 // select autonomous here
 void autonomous() {
 
-  // autonomousSoloAWP();
-  // autonomousRight();
-  // autonomousLeft();
-  // autonomousLeft2();
-  // autonomousLeft3();
   // autonomousSkills();
-  // autonomousLeftRush();
-  // autonomousSkillsPark()
+  // autonomousMain();
   // tuneAngularPID();
   // tuneLateralPID();
 }
