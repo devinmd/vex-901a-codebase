@@ -12,8 +12,7 @@
 #include "pros/screen.hpp"
 
 //
-#include "autonomous.h"
-#include "helpers.h"
+#include "./autons/autonomous.h"
 #include "motors.h"
 
 namespace {
