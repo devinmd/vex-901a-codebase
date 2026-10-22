@@ -10,6 +10,7 @@
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
 #include "pros/screen.hpp"
+#include <algorithm>
 
 //
 #include "./autons/autonomous.h"
@@ -61,11 +62,22 @@ void brain_ui_touch() {
 
 } // namespace
 
+/**
+ * Runs the user autonomous code. This function will be started in its own task
+ * with the default priority and stack size whenever the robot is enabled via
+ * the Field Management System or the VEX Competition Switch in the autonomous
+ * mode. Alternatively, this function may be called in initialize or opcontrol
+ * for non-competition testing purposes.
+ *
+ * If the robot is disabled or communications is lost, the autonomous task
+ * will be stopped. Re-enabling the robot will restart the task, not re-start it
+ * from where it left off.
+ */
 // select autonomous here
 void autonomous() {
 
   // autonomousSkills();
-  // autonomousMain();
+  autonomousMain();
   // tuneAngularPID();
   // tuneLateralPID();
 }
@@ -119,22 +131,6 @@ void disabled() {}
 void competition_initialize() {}
 
 /**
- * Runs the user autonomous code. This function will be started in its own task
- * with the default priority and stack size whenever the robot is enabled via
- * the Field Management System or the VEX Competition Switch in the autonomous
- * mode. Alternatively, this function may be called in initialize or opcontrol
- * for non-competition testing purposes.
- *
- * If the robot is disabled or communications is lost, the autonomous task
- * will be stopped. Re-enabling the robot will restart the task, not re-start it
- * from where it left off.
- */
-
-/*
-forward is the tongue side
-*/
-
-/**
  * Runs the operator control code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
  * the Field Management System or the VEX Competition Switch in the operator
@@ -148,112 +144,107 @@ forward is the tongue side
  * task, not resume it from where it left off.
  */
 
+// forward is the tongue side
+
+// drive
 const double TURN_MULTIPLIER = 0.95;
+
+// anti-tip
 const double TIP_THRESHOLD = 8.0; // degrees of tilt before anti-tip engages
 const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
 
+// wrist
+const int WRIST_MAX_POSITION = 720; // max wrist angle (90 deg) to prevent overextension
+
+// motor power limits
+const int FULL_POWER = 127;
+
 void opcontrol() {
-
-  int direction = 1;
+  int direction = 1; // 1 = normal throttle, -1 = inverted
   bool last_x = false;
-  bool x_pressed = false;
 
-  const int zero = lift_motors.set_zero_position_all(0.0);
+  // treat the starting positions of the lift and wrist as zero
+  lift_motors.set_zero_position_all(0.0);
+  wrist_motor.set_zero_position(0.0);
 
-  const int wristZero = wrist_motor.set_zero_position(0.0);
-  const int wristMax = 720;
-
+  // hold motor position when not moving
   lift_motors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
   wrist_motor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
   while (true) {
-
-    int liftHeight = lift_motors.get_position();
-
-    // Read angle from IMU
+    double lift_height = lift_motors.get_position();
     double current_roll = imu.get_roll();
 
+    //
+    // DRIVETRAIN (with anti-tip)
     if (std::abs(current_roll) > TIP_THRESHOLD) {
-      // Force motors to COAST/BRAKE so they react instantly without fighting a
-      // HOLD lock? Calculate corrective power proportional to how severe the
-      // tip is
+      // drive under the tilt with power proportional to how severe the tip is
       int correction_power = current_roll * -ANTI_TIP_GAIN;
-
-      // Cap the power to V5 voltage limits (-127 to 127)
-      if (correction_power > 127)
-        correction_power = 127;
-      if (correction_power < -127)
-        correction_power = -127;
-
-      // Drive directly under the tilt direction
+      correction_power = std::clamp(correction_power, -FULL_POWER, FULL_POWER);
       left_mg.move(correction_power);
       right_mg.move(correction_power);
     } else {
       // curvature drive
-      int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-      int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-      chassis.curvature(leftY * direction, 0.95 * rightX);
+      const int left_y = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+      const int right_x = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+      chassis.curvature(left_y * direction, TURN_MULTIPLIER * right_x);
     }
 
     //
-    // LIFT
+    // LIFT (R1 up, L1 down, can't go below 0)
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-      lift_motors.move(127);
-    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) &&
-               lift_motors.get_position() > 0) {
-      // stop lift from going below 0
-      lift_motors.move(-127);
+      lift_motors.move(FULL_POWER);
+    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && lift_motors.get_position() > 0) {
+      lift_motors.move(-FULL_POWER);
     } else {
       lift_motors.move(0);
     }
 
     //
-    // CLAW & WRIST
-    const bool wristUp = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
-    const bool wristDown = false;
-    // controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
-    const bool clawOpenPressed =
-        controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
-    bool clawClosedPressed =
-        controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
+    // INTAKE (L2, also closes the claw to grab the pin)
+    const bool intaking = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+    intake_motor.move(intaking ? FULL_POWER : 0);
 
     //
-    // INTAKE
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-      intake_motor.move(127);
-      clawClosedPressed = true; // close claw when intaking
-      // } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) &&
-      // lift_motors.get_position() > 0) { stop lift from going below 0
-      // lift_motors.move(-127);
+    // CLAW (RIGHT open, Y close)
+    const bool claw_open = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
+    const bool claw_close =
+        controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) || intaking;
+
+    if (claw_open) {
+      claw_motor.move(FULL_POWER);
+    } else if (claw_close) {
+      claw_motor.move(-FULL_POWER);
     } else {
-      intake_motor.move(0);
+      claw_motor.move(0);
     }
 
-    claw_motor.move(clawOpenPressed ? 127 : clawClosedPressed ? -127 : 0);
+    //
+    // WRIST (R2 up, down currently disabled)
+    const bool wrist_up = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    const bool wrist_down = false; // controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+    const double wrist_position = wrist_motor.get_position();
 
-    pros::lcd::print(0, "Wrist pos: %f", wrist_motor.get_position());
-    pros::lcd::print(2, "Lift pos: %f", liftHeight);
-
-    if (wrist_motor.get_position() < wristMax && wristUp) {
-      wrist_motor.move(127);
-    } else if (wrist_motor.get_position() > 0 && wristDown) {
-      wrist_motor.move(-127);
+    if (wrist_up && wrist_position < WRIST_MAX_POSITION) {
+      wrist_motor.move(FULL_POWER);
+    } else if (wrist_down && wrist_position > 0) {
+      wrist_motor.move(-FULL_POWER);
     } else {
       wrist_motor.move(0);
     }
 
     //
-    // DRIVETRAIN MOTOR TEST
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)) {
-      // testMotors();
-    }
-
-    // invert throttle button
-    x_pressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
+    // INVERT THROTTLE (X, toggles on press)
+    const bool x_pressed = controller.get_digital(pros::E_CONTROLLER_DIGITAL_X);
     if (x_pressed && !last_x) {
       direction = -direction;
     }
     last_x = x_pressed;
+
+    //
+    // DEBUG
+    pros::lcd::print(0, "Wrist pos: %f", wrist_position);
+    pros::lcd::print(2, "Lift pos: %f", lift_height);
 
     pros::delay(20);
   }

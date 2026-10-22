@@ -17,6 +17,7 @@ temp.errors
 .d/
 
 .DS_Store
+.clang-format
 
 include
 firmware
