@@ -20,6 +20,7 @@ extern pros::MotorGroup right_mg;
 extern pros::MotorGroup lift_motors;
 extern pros::Motor claw_motor;
 extern pros::Motor wrist_motor;
+extern pros::Motor intake_motor;
 
 
 // Sensors

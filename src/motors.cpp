@@ -9,10 +9,11 @@ pros::MotorGroup right_mg({1,2}, pros::MotorGearset::blue);
 pros::MotorGroup lift_motors({7,-4}, pros::MotorGearset::green);
 pros::Motor wrist_motor(9, pros::MotorGearset::rpm_200);
 pros::Motor claw_motor(8,pros::MotorGearset::rpm_200);
+pros::Motor intake_motor(11, pros::MotorGearset::blue);
 
 
 // Sensors
-pros::Imu imu(5);
+pros::Imu imu(6);
 pros::Rotation vertical_rotation_sensor(-17);
 
 // Drivetrain settings

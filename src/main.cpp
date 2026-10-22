@@ -9,11 +9,58 @@
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
+#include "pros/screen.hpp"
 
 //
 #include "autonomous.h"
 #include "helpers.h"
 #include "motors.h"
+
+namespace {
+
+constexpr int BUTTON_LEFT = 145;
+constexpr int BUTTON_TOP = 120;
+constexpr int BUTTON_RIGHT = 335;
+constexpr int BUTTON_BOTTOM = 180;
+
+void draw_test_button(bool pressed) {
+  pros::screen::set_pen(pressed ? pros::c::COLOR_DARK_BLUE
+                                : pros::c::COLOR_BLUE);
+  pros::screen::fill_rect(BUTTON_LEFT, BUTTON_TOP, BUTTON_RIGHT, BUTTON_BOTTOM);
+
+  pros::screen::set_pen(pros::c::COLOR_WHITE);
+  pros::screen::print(pros::E_TEXT_MEDIUM, 205, 140, "TEST");
+}
+
+void draw_brain_ui() {
+  pros::screen::set_pen(pros::c::COLOR_BLACK);
+  pros::screen::fill_rect(0, 0, 479, 239);
+
+  pros::screen::set_pen(pros::c::COLOR_WHITE);
+  pros::screen::print(pros::E_TEXT_LARGE, 145, 35, "Hello World");
+
+  draw_test_button(false);
+
+  pros::screen::set_pen(pros::c::COLOR_LIGHT_GRAY);
+  pros::screen::print(pros::E_TEXT_SMALL, 155, 205,
+                      "Tap TEST to check the touchscreen");
+}
+
+void brain_ui_touch() {
+  const pros::screen_touch_status_s_t touch = pros::screen::touch_status();
+
+  if (touch.x >= BUTTON_LEFT && touch.x <= BUTTON_RIGHT &&
+      touch.y >= BUTTON_TOP && touch.y <= BUTTON_BOTTOM) {
+    draw_test_button(true);
+
+    pros::screen::set_pen(pros::c::COLOR_BLACK);
+    pros::screen::fill_rect(155, 205, 325, 220);
+    pros::screen::set_pen(pros::c::COLOR_GREEN);
+    pros::screen::print(pros::E_TEXT_SMALL, 205, 205, "Button pressed!");
+  }
+}
+
+} // namespace
 
 // select autonomous here
 void autonomous() {
@@ -38,6 +85,8 @@ void autonomous() {
  */
 void initialize() {
   pros::lcd::initialize();
+  draw_brain_ui();
+  pros::screen::touch_callback(brain_ui_touch, pros::E_TOUCH_PRESSED);
   chassis.calibrate();
 
   // pros::Task intake_motor_watcher(intake_motor_monitor_task);
@@ -107,31 +156,35 @@ forward is the tongue side
  */
 
 const double TURN_MULTIPLIER = 0.95;
-const int BRAKE_DEADZONE = 10;
-const int DRIVETRAIN_MODE = 0;     // 0 = coast, 1 = brake, 2 = hold
-const double TIP_THRESHOLD = 12.0; // degrees of tilt before anti-tip engages
-const double ANTI_TIP_GAIN = 8.0;  // how aggressively it drives under itself
+const double TIP_THRESHOLD = 8.0; // degrees of tilt before anti-tip engages
+const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
 
 void opcontrol() {
 
   int direction = 1;
   bool last_x = false;
   bool x_pressed = false;
+
   const int zero = lift_motors.set_zero_position_all(0.0);
 
+  const int wristZero = wrist_motor.set_zero_position(0.0);
+  const int wristMax = 720;
+
   lift_motors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  wrist_motor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
   while (true) {
 
-    // Read angle from IMU
-    double current_pitch = imu.get_pitch();
-    // double current_pitch = imu.get_roll();
+    int liftHeight = lift_motors.get_position();
 
-    if (std::abs(current_pitch) > TIP_THRESHOLD) {
+    // Read angle from IMU
+    double current_roll = imu.get_roll();
+
+    if (std::abs(current_roll) > TIP_THRESHOLD) {
       // Force motors to COAST/BRAKE so they react instantly without fighting a
       // HOLD lock? Calculate corrective power proportional to how severe the
       // tip is
-      int correction_power = current_pitch * ANTI_TIP_GAIN;
+      int correction_power = current_roll * -ANTI_TIP_GAIN;
 
       // Cap the power to V5 voltage limits (-127 to 127)
       if (correction_power > 127)
@@ -146,49 +199,15 @@ void opcontrol() {
       // curvature drive
       int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
       int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
-
-      // when driving normally, joystick is moving
-      if (abs(leftY) > 10 || abs(rightX) > 10) {
-        if (DRIVETRAIN_MODE == 0) {
-          // turn on coasting
-          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-        } else {
-          // turn on braking
-          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-        }
-        chassis.curvature(leftY * direction, 0.95 * rightX);
-      }
-      // when joystick is idle
-      else {
-        if (DRIVETRAIN_MODE == 2) {
-          // hold
-          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-          left_mg.move_velocity(0);
-          right_mg.move_velocity(0);
-        } else if (DRIVETRAIN_MODE == 1) {
-          // brake
-          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-          left_mg.move_velocity(0);
-          right_mg.move_velocity(0);
-        } else {
-          // coast
-          left_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-          right_mg.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-          left_mg.move(0);
-          right_mg.move(0);
-        }
-      }
+      chassis.curvature(leftY * direction, 0.95 * rightX);
     }
 
     //
     // LIFT
     if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
       lift_motors.move(127);
-    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) && lift_motors.get_position() > 0) {
+    } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) &&
+               lift_motors.get_position() > 0) {
       // stop lift from going below 0
       lift_motors.move(-127);
     } else {
@@ -197,15 +216,38 @@ void opcontrol() {
 
     //
     // CLAW & WRIST
-    const bool wristPressed =
-        controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    const bool wristUp = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
+    const bool wristDown = false;
+    // controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
     const bool clawOpenPressed =
         controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
-    const bool clawClosedPressed =
+    bool clawClosedPressed =
         controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y);
 
+    //
+    // INTAKE
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+      intake_motor.move(127);
+      clawClosedPressed = true; // close claw when intaking
+      // } else if (controller.get_digital((pros::E_CONTROLLER_DIGITAL_L1)) &&
+      // lift_motors.get_position() > 0) { stop lift from going below 0
+      // lift_motors.move(-127);
+    } else {
+      intake_motor.move(0);
+    }
+
     claw_motor.move(clawOpenPressed ? 127 : clawClosedPressed ? -127 : 0);
-    wrist_motor.move(wristPressed ? 63 : 0);
+
+    pros::lcd::print(0, "Wrist pos: %f", wrist_motor.get_position());
+    pros::lcd::print(2, "Lift pos: %f", liftHeight);
+
+    if (wrist_motor.get_position() < wristMax && wristUp) {
+      wrist_motor.move(127);
+    } else if (wrist_motor.get_position() > 0 && wristDown) {
+      wrist_motor.move(-127);
+    } else {
+      wrist_motor.move(0);
+    }
 
     //
     // DRIVETRAIN MOTOR TEST
