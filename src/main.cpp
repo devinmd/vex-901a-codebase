@@ -77,7 +77,7 @@ void brain_ui_touch() {
 void autonomous() {
 
   // autonomousSkills();
-  autonomousMain();
+  // autonomousMain();
   // tuneAngularPID();
   // tuneLateralPID();
 }
@@ -154,7 +154,7 @@ const double TIP_THRESHOLD = 8.0; // degrees of tilt before anti-tip engages
 const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
 
 // wrist
-const int WRIST_MAX_POSITION = 720; // max wrist angle (90 deg) to prevent overextension
+const int WRIST_MAX_POSITION = 900; // max wrist angle (90 deg) to prevent overextension
 
 // motor power limits
 const int FULL_POWER = 127;
@@ -205,6 +205,15 @@ void opcontrol() {
     const bool intaking = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
     intake_motor.move(intaking ? FULL_POWER : 0);
 
+    if(intaking){
+      // move lift to 450 position
+      if(lift_height < 480){
+        lift_motors.move(FULL_POWER);
+      } else {
+        lift_motors.move(0);
+      }
+    }
+
     //
     // CLAW (RIGHT open, Y close)
     const bool claw_open = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
@@ -222,7 +231,7 @@ void opcontrol() {
     //
     // WRIST (R2 up, down currently disabled)
     const bool wrist_up = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
-    const bool wrist_down = false; // controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
+    const bool wrist_down = controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN);
     const double wrist_position = wrist_motor.get_position();
 
     if (wrist_up && wrist_position < WRIST_MAX_POSITION) {
