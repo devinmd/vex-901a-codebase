@@ -156,12 +156,19 @@ const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
 // wrist
 const int WRIST_MAX_POSITION = 900; // max wrist angle (90 deg) to prevent overextension
 
+// lift
+const double LIFT_INTAKE_HEIGHT = 560;  // lift position for grabbing a pin and cup
+const double LIFT_BOTTOM_TOLERANCE = 50; // within this of 0 counts as "at the bottom"
+const int LIFT_INTAKE_VELOCITY = 150;    // rpm (green cartridge max is 200)
+
 // motor power limits
 const int FULL_POWER = 127;
 
 void opcontrol() {
   int direction = 1; // 1 = normal throttle, -1 = inverted
   bool last_x = false;
+  bool last_intaking = false;
+  bool lift_auto_moving = false; // lift is moving itself to LIFT_INTAKE_HEIGHT
 
   // treat the starting positions of the lift and wrist as zero
   lift_motors.set_zero_position_all(0.0);
@@ -191,27 +198,35 @@ void opcontrol() {
     }
 
     //
-    // LIFT (R1 up, L1 down, can't go below 0)
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-      lift_motors.move(FULL_POWER);
-    } else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && lift_motors.get_position() > 0) {
-      lift_motors.move(-FULL_POWER);
-    } else {
-      lift_motors.move(0);
-    }
-
-    //
     // INTAKE (L2, also closes the claw to grab the pin)
     const bool intaking = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
     intake_motor.move(intaking ? FULL_POWER : 0);
 
-    if(intaking){
-      // move lift to 450 position
-      if(lift_height < 480){
-        lift_motors.move(FULL_POWER);
-      } else {
-        lift_motors.move(0);
-      }
+    // starting to intake with the lift at the bottom raises it to intake
+    // height; if the lift is already up we're scoring, so leave it alone
+    if (intaking && !last_intaking && lift_height < LIFT_BOTTOM_TOLERANCE) {
+      lift_auto_moving = true;
+      // the motor's built-in position PID slows down before the target
+      // instead of coasting past it
+      lift_motors.move_absolute(LIFT_INTAKE_HEIGHT, LIFT_INTAKE_VELOCITY);
+    }
+    last_intaking = intaking;
+
+    //
+    // LIFT (R1 up, L1 down, can't go below 0)
+    const bool lift_up = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
+    const bool lift_down = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
+
+    if (lift_up || lift_down) {
+      lift_auto_moving = false; // driver takes over from the auto move
+    }
+
+    if (lift_up) {
+      lift_motors.move(FULL_POWER);
+    } else if (lift_down && lift_height > 0) {
+      lift_motors.move(-FULL_POWER);
+    } else if (!lift_auto_moving) {
+      lift_motors.move(0);
     }
 
     //
