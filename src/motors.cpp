@@ -7,9 +7,10 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 pros::MotorGroup left_mg({-10,-3}, pros::MotorGearset::blue);
 pros::MotorGroup right_mg({1,2}, pros::MotorGearset::blue);
 pros::MotorGroup lift_motors({7,-4}, pros::MotorGearset::green);
-pros::Motor wrist_motor(9, pros::MotorGearset::rpm_200);
-pros::Motor claw_motor(8,pros::MotorGearset::rpm_200);
 pros::Motor intake_motor(11, pros::MotorGearset::blue);
+
+pros::adi::DigitalOut wristPiston('A', false);
+pros::adi::DigitalOut clawPiston('A', false);
 
 
 // Sensors

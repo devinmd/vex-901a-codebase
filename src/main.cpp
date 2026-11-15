@@ -11,56 +11,11 @@
 #include "pros/rtos.hpp"
 #include "pros/screen.hpp"
 #include <algorithm>
+#include <numbers>
 
 //
 #include "./autons/autonomous.h"
 #include "motors.h"
-
-namespace {
-
-constexpr int BUTTON_LEFT = 145;
-constexpr int BUTTON_TOP = 120;
-constexpr int BUTTON_RIGHT = 335;
-constexpr int BUTTON_BOTTOM = 180;
-
-void draw_test_button(bool pressed) {
-  pros::screen::set_pen(pressed ? pros::c::COLOR_DARK_BLUE
-                                : pros::c::COLOR_BLUE);
-  pros::screen::fill_rect(BUTTON_LEFT, BUTTON_TOP, BUTTON_RIGHT, BUTTON_BOTTOM);
-
-  pros::screen::set_pen(pros::c::COLOR_WHITE);
-  pros::screen::print(pros::E_TEXT_MEDIUM, 205, 140, "TEST");
-}
-
-void draw_brain_ui() {
-  pros::screen::set_pen(pros::c::COLOR_BLACK);
-  pros::screen::fill_rect(0, 0, 479, 239);
-
-  pros::screen::set_pen(pros::c::COLOR_WHITE);
-  pros::screen::print(pros::E_TEXT_LARGE, 145, 35, "Hello World");
-
-  draw_test_button(false);
-
-  pros::screen::set_pen(pros::c::COLOR_LIGHT_GRAY);
-  pros::screen::print(pros::E_TEXT_SMALL, 155, 205,
-                      "Tap TEST to check the touchscreen");
-}
-
-void brain_ui_touch() {
-  const pros::screen_touch_status_s_t touch = pros::screen::touch_status();
-
-  if (touch.x >= BUTTON_LEFT && touch.x <= BUTTON_RIGHT &&
-      touch.y >= BUTTON_TOP && touch.y <= BUTTON_BOTTOM) {
-    draw_test_button(true);
-
-    pros::screen::set_pen(pros::c::COLOR_BLACK);
-    pros::screen::fill_rect(155, 205, 325, 220);
-    pros::screen::set_pen(pros::c::COLOR_GREEN);
-    pros::screen::print(pros::E_TEXT_SMALL, 205, 205, "Button pressed!");
-  }
-}
-
-} // namespace
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -75,7 +30,7 @@ void brain_ui_touch() {
  */
 // select autonomous here
 void autonomous() {
-
+  autonomousLeft();
   // autonomousSkills();
   // autonomousMain();
   // tuneAngularPID();
@@ -90,9 +45,10 @@ void autonomous() {
  */
 void initialize() {
   pros::lcd::initialize();
-  draw_brain_ui();
-  pros::screen::touch_callback(brain_ui_touch, pros::E_TOUCH_PRESSED);
   chassis.calibrate();
+
+  // the lift must start at the bottom, which becomes its 0 position
+  lift_motors.tare_position();
 
   // pros::Task intake_motor_watcher(intake_motor_monitor_task);
 
@@ -153,13 +109,14 @@ const double TURN_MULTIPLIER = 0.95;
 const double TIP_THRESHOLD = 8.0; // degrees of tilt before anti-tip engages
 const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
 
-// wrist
-const int WRIST_MAX_POSITION = 900; // max wrist angle (90 deg) to prevent overextension
-
 // lift
-const double LIFT_INTAKE_HEIGHT = 560;  // lift position for grabbing a pin and cup
-const double LIFT_BOTTOM_TOLERANCE = 50; // within this of 0 counts as "at the bottom"
-const int LIFT_INTAKE_VELOCITY = 150;    // rpm (green cartridge max is 200)
+const int LIFT_STAGES = 3;
+const double WINCH_RADIUS = 0.4;                                                        // inches
+const double LIFT_MULTIPLIER = 2 * std::numbers::pi * WINCH_RADIUS / 360 * LIFT_STAGES; // inches lifted per degree the lift motor rotates
+const double LIFT_BOTTOM_HEIGHT_IN = 5.75;                                              // height of the center of the claw from the floor at the lift's lowest position
+const double GRAB_CUP_CONE_LIFT_HEIGHT = 6.55 - LIFT_BOTTOM_HEIGHT_IN;                  // height of the center of the claw to pick up a cup and cone standing on the floor
+const double LIFT_INTAKE_HEIGHT = 2.6;                                                  // lift position for grabbing from intake in inches if 0 is the absolute bottom lift position
+const double LIFT_BOTTOM_TOLERANCE = 50;                                                // within this of 0 counts as "at the bottom"
 
 // motor power limits
 const int FULL_POWER = 127;
@@ -170,23 +127,25 @@ void opcontrol() {
   bool last_intaking = false;
   bool lift_auto_moving = false; // lift is moving itself to LIFT_INTAKE_HEIGHT
 
-  // treat the starting positions of the lift and wrist as zero
-  lift_motors.set_zero_position_all(0.0);
-  wrist_motor.set_zero_position(0.0);
+  // wrist & claw
+  bool wrist_up = true;
+  bool claw_closed = true;
 
-  // hold motor position when not moving
+  // hold lift motor position when not moving
   lift_motors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-  wrist_motor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
   while (true) {
-    double lift_height = lift_motors.get_position();
-    double current_roll = imu.get_roll();
+    double current_imu_roll = imu.get_roll();
+
+    const double lift_motor_position = lift_motors.get_position();
+
+    const double LIFT_HEIGHT = LIFT_MULTIPLIER * lift_motor_position;
 
     //
     // DRIVETRAIN (with anti-tip)
-    if (std::abs(current_roll) > TIP_THRESHOLD) {
+    if (std::abs(current_imu_roll) > TIP_THRESHOLD) {
       // drive under the tilt with power proportional to how severe the tip is
-      int correction_power = current_roll * -ANTI_TIP_GAIN;
+      int correction_power = current_imu_roll * -ANTI_TIP_GAIN;
       correction_power = std::clamp(correction_power, -FULL_POWER, FULL_POWER);
       left_mg.move(correction_power);
       right_mg.move(correction_power);
@@ -198,22 +157,20 @@ void opcontrol() {
     }
 
     //
-    // INTAKE (L2, also closes the claw to grab the pin)
+    // INTAKE (L2)
     const bool intaking = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2);
     intake_motor.move(intaking ? FULL_POWER : 0);
 
-    // starting to intake with the lift at the bottom raises it to intake
-    // height; if the lift is already up we're scoring, so leave it alone
-    if (intaking && !last_intaking && lift_height < LIFT_BOTTOM_TOLERANCE) {
+    // starting to intake with the lift at the bottom raises it to intake height
+    // if the lift is already up then leave it
+    if (intaking && !last_intaking && lift_motor_position < LIFT_BOTTOM_TOLERANCE) {
       lift_auto_moving = true;
-      // the motor's built-in position PID slows down before the target
-      // instead of coasting past it
-      lift_motors.move_absolute(LIFT_INTAKE_HEIGHT, LIFT_INTAKE_VELOCITY);
+      lift_motors.move_absolute(LIFT_INTAKE_HEIGHT / LIFT_MULTIPLIER, 150);
     }
     last_intaking = intaking;
 
     //
-    // LIFT (R1 up, L1 down, can't go below 0)
+    // LIFT (R1 up, L1 down)
     const bool lift_up = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1);
     const bool lift_down = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
 
@@ -223,38 +180,24 @@ void opcontrol() {
 
     if (lift_up) {
       lift_motors.move(FULL_POWER);
-    } else if (lift_down && lift_height > 0) {
+    } else if (lift_down && lift_motor_position > 0) {
       lift_motors.move(-FULL_POWER);
     } else if (!lift_auto_moving) {
       lift_motors.move(0);
     }
 
     //
-    // CLAW (RIGHT open, Y close)
-    const bool claw_open = controller.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT);
-    const bool claw_close =
-        controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y) || intaking;
-
-    if (claw_open) {
-      claw_motor.move(FULL_POWER);
-    } else if (claw_close) {
-      claw_motor.move(-FULL_POWER);
-    } else {
-      claw_motor.move(0);
+    // TOGGLE CLAW (Y)
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+      claw_closed = !claw_closed;
+      clawPiston.set_value(claw_closed);
     }
 
     //
-    // WRIST (R2 up, down currently disabled)
-    const bool wrist_up = controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2);
-    const bool wrist_down = controller.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN);
-    const double wrist_position = wrist_motor.get_position();
-
-    if (wrist_up && wrist_position < WRIST_MAX_POSITION) {
-      wrist_motor.move(FULL_POWER);
-    } else if (wrist_down && wrist_position > 0) {
-      wrist_motor.move(-FULL_POWER);
-    } else {
-      wrist_motor.move(0);
+    // TOGGLE WRIST (R2)
+    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+      wrist_up = !wrist_up;
+      wristPiston.set_value(wrist_up);
     }
 
     //
@@ -267,8 +210,7 @@ void opcontrol() {
 
     //
     // DEBUG
-    pros::lcd::print(0, "Wrist pos: %f", wrist_position);
-    pros::lcd::print(2, "Lift pos: %f", lift_height);
+    pros::lcd::print(2, "Lift pos: %f", lift_motor_position);
 
     pros::delay(20);
   }

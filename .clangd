@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - "--target=arm-none-eabi"
+    - "-std=gnu++23"
+  Remove:
+    - "-mfloat-abi=*"
+    - "-mfpu=*"
+    - "-mcpu=*"

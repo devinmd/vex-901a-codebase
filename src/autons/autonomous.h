@@ -6,6 +6,7 @@
 
 // Autonomous functions
 void autonomousMain();
+void autonomousLeft();
 void autonomousSkills();
 
 
