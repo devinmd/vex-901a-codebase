@@ -8,6 +8,8 @@
 void autonomousMain();
 void autonomousLeft();
 void autonomousSkills();
+void autoTuneAngularPID();
+void autoTuneLateralPID();
 
 
 #endif // AUTONOMOUS_H

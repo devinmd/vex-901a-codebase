@@ -35,6 +35,8 @@ void autonomous() {
   // autonomousMain();
   // tuneAngularPID();
   // tuneLateralPID();
+  // autoTuneAngularPID(); // tune angular first
+  // autoTuneLateralPID();
 }
 
 /**
