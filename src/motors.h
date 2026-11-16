@@ -20,8 +20,9 @@ extern pros::MotorGroup right_mg;
 extern pros::MotorGroup lift_motors;
 extern pros::Motor intake_motor;
 
-extern pros::adi::DigitalOut wristPiston;
 extern pros::adi::DigitalOut clawPiston;
+extern pros::adi::DigitalOut wristPiston;
+
 
 
 // Sensors

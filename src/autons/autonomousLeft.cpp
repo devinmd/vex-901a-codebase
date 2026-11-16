@@ -1,5 +1,3 @@
-
-
 #include "../motors.h"
 #include "autonomous.h"
 #include "pros/rtos.hpp"

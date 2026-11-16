@@ -1,6 +1,3 @@
-
-// clang-format off
-
 #include "autonomous.h"
 #include "../motors.h"
 #include "pros/rtos.hpp"

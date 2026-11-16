@@ -1,6 +1,5 @@
-// clang-format off
-#include "autonomous.h"
 #include "../motors.h"
+#include "autonomous.h"
 #include "pros/rtos.hpp"
 #include <algorithm>
 #include <cmath>
@@ -46,7 +45,7 @@ struct ScoreSettings {
 const ScoreSettings ANGULAR_SCORE = {1500, 1.0, 0.1, 0.2, 1.0}; // degrees
 const ScoreSettings LATERAL_SCORE = {2000, 0.5, 0.5, 1.0, 1.0}; // inches
 
-const float TURN_ANGLE = 90;   // degrees
+const float TURN_ANGLE = 90;     // degrees
 const float DRIVE_DISTANCE = 24; // inches
 
 bool aborted = false;
@@ -71,7 +70,7 @@ float score_move(float start, float target, const ScoreSettings &score, float (*
   const float direction = target > start ? 1 : -1;
 
   float overshoot = 0;
-  float remaining = 0;  // distance left to the target, negative once past it
+  float remaining = 0; // distance left to the target, negative once past it
   int last_unsettled_ms = 0;
 
   for (int t = 0; t < score.test_time_ms; t += SAMPLE_MS) {

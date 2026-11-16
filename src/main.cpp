@@ -30,12 +30,12 @@
  */
 // select autonomous here
 void autonomous() {
-  autonomousLeft();
+  // autonomousLeft();
   // autonomousSkills();
   // autonomousMain();
   // tuneAngularPID();
   // tuneLateralPID();
-  // autoTuneAngularPID(); // tune angular first
+  autoTuneAngularPID(); // tune angular first
   // autoTuneLateralPID();
 }
 
@@ -189,15 +189,15 @@ void opcontrol() {
     }
 
     //
-    // TOGGLE CLAW (Y)
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+    // TOGGLE CLAW (Y, once per press)
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
       claw_closed = !claw_closed;
       clawPiston.set_value(claw_closed);
     }
 
     //
-    // TOGGLE WRIST (R2)
-    if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+    // TOGGLE WRIST (R2, once per press)
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)) {
       wrist_up = !wrist_up;
       wristPiston.set_value(wrist_up);
     }
