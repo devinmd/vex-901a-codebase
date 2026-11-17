@@ -133,16 +133,15 @@ float test_lateral(float kP, float kD) {
 void print_result(const char *name, int trial, const float gains[2], float cost, const float best[2], float best_cost) {
   printf("%s trial %d: kP=%.3f kD=%.3f cost=%.3f | best kP=%.3f kD=%.3f cost=%.3f\n",
          name, trial, gains[0], gains[1], cost, best[0], best[1], best_cost);
-  pros::lcd::print(0, "%s tuning (B to stop)", name);
-  pros::lcd::print(1, "trial %d: kP %.3f kD %.3f", trial, gains[0], gains[1]);
-  pros::lcd::print(2, "cost %.3f", cost);
-  pros::lcd::print(3, "BEST kP %.3f kD %.3f", best[0], best[1]);
-  pros::lcd::print(4, "BEST cost %.3f", best_cost);
+  // brain screen lines 5-7, the rest are always in use (see initialize in main.cpp)
+  pros::lcd::print(5, "%s trial %d (B to stop)", name, trial);
+  pros::lcd::print(6, "try  kP %.3f kD %.3f cost %.2f", gains[0], gains[1], cost);
+  pros::lcd::print(7, "BEST kP %.3f kD %.3f cost %.2f", best[0], best[1], best_cost);
 }
 
 // twiddle: nudge each gain up, then down, keep whichever helps, and shrink
 // the nudge when neither does
-void twiddle(const char *name, lemlib::PID &pid, const lemlib::ControllerSettings &settings, float (*test)(float, float)) {
+void twiddle(const char *name, lemlib::PID &pid, lemlib::ControllerSettings &settings, float (*test)(float, float)) {
   aborted = false;
 
   float best[2] = {settings.kP, settings.kD};
@@ -192,15 +191,22 @@ void twiddle(const char *name, lemlib::PID &pid, const lemlib::ControllerSetting
     }
   }
 
-  // leave the chassis running the best gains found
+  // leave the chassis running the best gains found, and save them in the
+  // settings so the brain screen shows them
   set_gains(pid, settings, best[0], best[1]);
+  settings.kP = best[0];
+  settings.kD = best[1];
 
   printf("%s DONE%s: kP=%.3f kD=%.3f cost=%.3f\n", name, aborted ? " (stopped early)" : "", best[0], best[1], best_cost);
-  pros::lcd::print(0, "%s DONE%s", name, aborted ? " (stopped)" : "");
-  pros::lcd::print(1, "kP %.3f kD %.3f", best[0], best[1]);
-  pros::lcd::print(2, "cost %.3f", best_cost);
-  pros::lcd::print(3, "copy these into motors.cpp");
-  pros::lcd::print(4, "");
+
+  pros::lcd::print(5, "%s DONE%s, cost %.2f", name, aborted ? " (stopped)" : "", best_cost);
+  pros::lcd::print(6, "copy kP %.3f kD %.3f", best[0], best[1]);
+  pros::lcd::print(7, "into motors.cpp");
+
+  // controller screen, stays there until the program restarts
+  // angular on line 0, lateral on line 1 so both results can be seen
+  controller.print(name[0] == 'A' ? 0 : 1, 0, "%.3s kP%.2f kD%.2f   ", name, best[0], best[1]);
+  pros::delay(60); // the controller can only take a new print every 50ms
 }
 
 } // namespace

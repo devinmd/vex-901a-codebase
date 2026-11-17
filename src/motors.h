@@ -5,6 +5,7 @@
 #include "lemlib/api.hpp"
 #include "lemlib/chassis/trackingWheel.hpp"
 #include "pros/adi.hpp"
+#include "pros/optical.hpp"
 #include "pros/misc.h"
 #include "pros/motor_group.hpp"
 #include "pros/motors.hpp"
@@ -27,6 +28,7 @@ extern pros::adi::DigitalOut wristPiston;
 
 // Sensors
 extern pros::Imu imu;
+extern pros::Optical claw_optical_sensor;
 extern pros::Rotation vertical_rotation_sensor;
 
 // Drivetrain

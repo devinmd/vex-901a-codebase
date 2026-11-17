@@ -3,6 +3,7 @@
 
 #include "main.h"
 #include "../motors.h"
+#include "../lift.h"
 
 // Autonomous functions
 void autonomousMain();

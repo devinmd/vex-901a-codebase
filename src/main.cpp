@@ -11,11 +11,16 @@
 #include "pros/rtos.hpp"
 #include "pros/screen.hpp"
 #include <algorithm>
-#include <numbers>
+#include <cerrno>
 
 //
 #include "./autons/autonomous.h"
+#include "lift.h"
 #include "motors.h"
+
+// claw auto close state, here so the brain screen can show it
+bool claw_auto_close_armed = true; // the lift starts at the bottom, so it's ready for the first grab
+bool rearm_when_clear = false;     // driver opened the claw, re-arm once the object is gone
 
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -49,25 +54,31 @@ void initialize() {
   pros::lcd::initialize();
   chassis.calibrate();
 
-  // the lift must start at the bottom, which becomes its 0 position
-  lift_motors.tare_position();
+  lift::initialize(); // the lift must start at the bottom
 
   // pros::Task intake_motor_watcher(intake_motor_monitor_task);
 
   // tonguePiston.set_value(true);    // lifts tongue
   // conveyorPiston.set_value(false); // raise conveyor
 
-  /*
-  pros::Task screenTask([&]() {
+  // brain screen, always on (lines 5-7 are left for the PID tuner)
+  pros::Task screen_task([]() {
     while (true) {
-      pros::lcd::print(0, "X: %f", chassis.getPose().x);
-      pros::lcd::print(1, "Y: %f", chassis.getPose().y);
-      pros::lcd::print(2, "Theta: %f", chassis.getPose().theta);
-      lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
+      // print odometry pose
+      const lemlib::Pose pose = chassis.getPose();
+      pros::lcd::print(0, "X %.2f  Y %.2f  Theta %.2f", pose.x, pose.y, pose.theta);
+      pros::lcd::print(1, "Lift: %.1f deg  %.2f in", lift_motors.get_position(), lift::getHeight());
+      const std::int32_t claw_proximity = claw_optical_sensor.get_proximity();
+      const char *auto_close_state = claw_auto_close_armed ? "ARMED" : rearm_when_clear ? "waiting for clear" : "off";
+      pros::lcd::print(2, "Claw proximity: %d  %s", claw_proximity, auto_close_state);
+
+      // the gains the chassis is using, these update after running the tuner
+      pros::lcd::print(3, "Angular kP %.3f kD %.3f", angular_controller.kP, angular_controller.kD);
+      pros::lcd::print(4, "Lateral kP %.3f kD %.3f", lateral_controller.kP, lateral_controller.kD);
+
       pros::delay(50);
     }
   });
-  */
 }
 
 /**
@@ -108,17 +119,16 @@ void competition_initialize() {}
 const double TURN_MULTIPLIER = 0.95;
 
 // anti-tip
-const double TIP_THRESHOLD = 8.0; // degrees of tilt before anti-tip engages
-const double ANTI_TIP_GAIN = 5.0; // how aggressively it drives under itself
+const double TIP_THRESHOLD_DEG = 8.0; // degrees of tilt before anti-tip engages
+const double ANTI_TIP_GAIN = 5.0;     // how aggressively it drives under itself
 
-// lift
-const int LIFT_STAGES = 3;
-const double WINCH_RADIUS = 0.4;                                                        // inches
-const double LIFT_MULTIPLIER = 2 * std::numbers::pi * WINCH_RADIUS / 360 * LIFT_STAGES; // inches lifted per degree the lift motor rotates
-const double LIFT_BOTTOM_HEIGHT_IN = 5.75;                                              // height of the center of the claw from the floor at the lift's lowest position
-const double GRAB_CUP_CONE_LIFT_HEIGHT = 6.55 - LIFT_BOTTOM_HEIGHT_IN;                  // height of the center of the claw to pick up a cup and cone standing on the floor
-const double LIFT_INTAKE_HEIGHT = 2.6;                                                  // lift position for grabbing from intake in inches if 0 is the absolute bottom lift position
-const double LIFT_BOTTOM_TOLERANCE = 50;                                                // within this of 0 counts as "at the bottom"
+// lift (heights and geometry are in lift.h)
+const double LIFT_BOTTOM_TOLERANCE_DEG = 50; // within this of 0 counts as "at the bottom"
+
+// claw
+const int CLAW_AUTO_CLOSE_PROXIMITY = 255;       // optical sensor proximity (0 far to 255 touching), the claw closes at this
+const double CLAW_AUTO_CLOSE_MAX_LIFT_DEG = 100; // lift motor degrees, only auto close below this (objects standing on the ground)
+const double CLAW_AUTO_CLOSE_REARM_HEIGHT_IN = 7; // claw height from the floor, auto close re-arms when the lift comes back down below this
 
 // motor power limits
 const int FULL_POWER = 127;
@@ -127,25 +137,24 @@ void opcontrol() {
   int direction = 1; // 1 = normal throttle, -1 = inverted
   bool last_x = false;
   bool last_intaking = false;
-  bool lift_auto_moving = false; // lift is moving itself to LIFT_INTAKE_HEIGHT
+  bool lift_auto_moving = false; // lift is moving itself (intake height or A lowering to the bottom)
+  bool lowering_to_bottom = false; // A is lowering the lift to the bottom
 
   // wrist & claw
   bool wrist_up = true;
   bool claw_closed = true;
-
-  // hold lift motor position when not moving
-  lift_motors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+  bool last_lift_low = true;
 
   while (true) {
     double current_imu_roll = imu.get_roll();
 
     const double lift_motor_position = lift_motors.get_position();
 
-    const double LIFT_HEIGHT = LIFT_MULTIPLIER * lift_motor_position;
+    const double LIFT_HEIGHT_IN = lift::getHeight();
 
     //
     // DRIVETRAIN (with anti-tip)
-    if (std::abs(current_imu_roll) > TIP_THRESHOLD) {
+    if (std::abs(current_imu_roll) > TIP_THRESHOLD_DEG) {
       // drive under the tilt with power proportional to how severe the tip is
       int correction_power = current_imu_roll * -ANTI_TIP_GAIN;
       correction_power = std::clamp(correction_power, -FULL_POWER, FULL_POWER);
@@ -165,9 +174,10 @@ void opcontrol() {
 
     // starting to intake with the lift at the bottom raises it to intake height
     // if the lift is already up then leave it
-    if (intaking && !last_intaking && lift_motor_position < LIFT_BOTTOM_TOLERANCE) {
+    if (intaking && !last_intaking && lift_motor_position < LIFT_BOTTOM_TOLERANCE_DEG) {
       lift_auto_moving = true;
-      lift_motors.move_absolute(LIFT_INTAKE_HEIGHT / LIFT_MULTIPLIER, 150);
+      lowering_to_bottom = false;
+      lift::setHeight(LIFT_INTAKE_HEIGHT_IN);
     }
     last_intaking = intaking;
 
@@ -177,7 +187,27 @@ void opcontrol() {
     const bool lift_down = controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1);
 
     if (lift_up || lift_down) {
-      lift_auto_moving = false; // driver takes over from the auto move
+      // driver takes over from any auto move
+      lift_auto_moving = false;
+      lowering_to_bottom = false;
+    }
+
+    //
+    // LOWER TO BOTTOM (A), the driver opens the claw (Y) at the right time on the way down
+    // pressing A again (or R1/L1 above) cancels it and holds the lift where it is
+    if (lowering_to_bottom && lift::isDone()) {
+      lowering_to_bottom = false; // reached the bottom, so the next A press starts a new one
+    }
+
+    if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
+      if (lowering_to_bottom) {
+        lift_auto_moving = false; // the manual lift code below stops and holds it
+        lowering_to_bottom = false;
+      } else {
+        lift::setHeight(0);
+        lift_auto_moving = true;
+        lowering_to_bottom = true;
+      }
     }
 
     if (lift_up) {
@@ -192,7 +222,43 @@ void opcontrol() {
     // TOGGLE CLAW (Y, once per press)
     if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
       claw_closed = !claw_closed;
-      clawPiston.set_value(claw_closed);
+      clawPiston.set_value(!claw_closed); // piston out opens the claw
+      // opening needs the object to leave before auto close works again,
+      // otherwise it would grab right back onto what was just let go
+      if (!claw_closed) {
+        claw_auto_close_armed = false;
+      }
+      rearm_when_clear = !claw_closed;
+
+      // the cup is let go, so finish lowering at full speed
+      if (!claw_closed && lowering_to_bottom) {
+        lift::setHeight(0, LIFT_TIMEOUT_MS, true, LIFT_MAX_VELOCITY_RPM);
+      }
+    }
+
+    // auto close the claw when an object on the ground reaches it
+    // it fires once, then re-arms when either
+    //  - the lift comes back down below CLAW_AUTO_CLOSE_REARM_HEIGHT_IN, or
+    //  - the driver opens the claw (Y) and the object is gone from the sensor
+    // so the driver can open the claw to drop something without it closing again
+    const bool lift_low = lift::getHeight() + LIFT_BOTTOM_HEIGHT_IN < CLAW_AUTO_CLOSE_REARM_HEIGHT_IN;
+    if (lift_low && !last_lift_low) {
+      claw_auto_close_armed = true;
+    }
+    last_lift_low = lift_low;
+
+    const std::int32_t claw_proximity = claw_optical_sensor.get_proximity();
+    const bool object_in_claw = claw_proximity != PROS_ERR && claw_proximity >= CLAW_AUTO_CLOSE_PROXIMITY;
+    if (rearm_when_clear && !object_in_claw) {
+      claw_auto_close_armed = true;
+      rearm_when_clear = false;
+    }
+
+    // only when the claw is open, so holding an object doesn't use up the arm
+    if (claw_auto_close_armed && !claw_closed && object_in_claw && lift_motor_position < CLAW_AUTO_CLOSE_MAX_LIFT_DEG) {
+      claw_closed = true;
+      clawPiston.set_value(!claw_closed); // piston out opens the claw
+      claw_auto_close_armed = false;
     }
 
     //
@@ -211,8 +277,16 @@ void opcontrol() {
     last_x = x_pressed;
 
     //
-    // DEBUG
-    pros::lcd::print(2, "Lift pos: %f", lift_motor_position);
+    // PID AUTO TUNER (LEFT angular, RIGHT lateral)
+    // only works when not plugged into a field or competition switch, so it
+    // can't start during a match. B stops it early
+    if (!pros::competition::is_connected()) {
+      if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
+        autoTuneAngularPID();
+      } else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)) {
+        autoTuneLateralPID();
+      }
+    }
 
     pros::delay(20);
   }

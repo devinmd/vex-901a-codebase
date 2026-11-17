@@ -10,13 +10,14 @@ pros::MotorGroup lift_motors({11, -4}, pros::MotorGearset::green);
 pros::Motor intake_motor(7, pros::MotorGearset::blue);
 
 // Pistons
-pros::adi::DigitalOut clawPiston('A', false);
+pros::adi::DigitalOut clawPiston('A', false); // true opens the claw, false closes it
 pros::adi::DigitalOut wristPiston('B', false);
 
 
 // Sensors
 pros::Imu imu(6);
 pros::Rotation vertical_rotation_sensor(-17);
+pros::Optical claw_optical_sensor(9); // sits right behind the claw
 
 // Drivetrain configuration
 lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 12.5, lemlib::Omniwheel::NEW_325, 360, 2);
