@@ -16,14 +16,14 @@ pros::adi::DigitalOut wristPiston('B', false);
 
 // Sensors
 pros::Imu imu(6);
-pros::Rotation vertical_rotation_sensor(-17);
+// pros::Rotation vertical_rotation_sensor(-17);
 pros::Optical claw_optical_sensor(9); // sits right behind the claw
 
 // Drivetrain configuration
 lemlib::Drivetrain drivetrain(&left_mg, &right_mg, 12.5, lemlib::Omniwheel::NEW_325, 360, 2);
 
 // Vertical tracking wheel
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor, lemlib::Omniwheel::NEW_2, 0);
+// lemlib::TrackingWheel vertical_tracking_wheel(&vertical_rotation_sensor, lemlib::Omniwheel::NEW_2, 0);
 
 /*
 Tune kP until small oscillations, kD to dampen those. Only use kI for little
@@ -76,7 +76,7 @@ lemlib::ControllerSettings
     );
 
 // Odometry sensor settings
-lemlib::OdomSensors odometrySensors(&vertical_tracking_wheel, nullptr, nullptr, nullptr, &imu);
+lemlib::OdomSensors odometrySensors(nullptr, nullptr, nullptr, nullptr, &imu);
 
 // Create the chassis
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, odometrySensors);
